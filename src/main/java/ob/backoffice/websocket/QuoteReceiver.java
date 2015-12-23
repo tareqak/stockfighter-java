@@ -1,6 +1,7 @@
 package ob.backoffice.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ob.backoffice.abstractions.Stock;
 import ob.backoffice.websocket.abstractions.Quote;
 import ob.backoffice.websocket.abstractions.TickerTape;
 import org.slf4j.Logger;
@@ -11,8 +12,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class QuoteReceiver implements Closeable {
     private static final Logger logger =
@@ -21,13 +24,11 @@ public class QuoteReceiver implements Closeable {
             "wss://www.stockfighter.io/ob/api/ws/";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final String url;
-    private final ReentrantReadWriteLock reentrantReadWriteLock =
-            new ReentrantReadWriteLock();
     private final WebSocketContainer webSocketContainer =
             ContainerProvider.getWebSocketContainer();
     private final AtomicBoolean done = new AtomicBoolean(false);
-    private Quote quote = null;
-    private AtomicBoolean newQuote = new AtomicBoolean(false);
+    private final Map<Stock, Quote> stockQuoteMap =
+            new ConcurrentHashMap<>(10);
     private Session session;
 
     public QuoteReceiver(final String account, final String venue) {
@@ -55,26 +56,8 @@ public class QuoteReceiver implements Closeable {
         }
     }
 
-    public Quote getQuote() {
-        try {
-            while (true) {
-                if (newQuote.get()) {
-                    newQuote.set(false);
-                    break;
-                }
-            }
-            reentrantReadWriteLock.readLock().lock();
-            return quote;
-        } finally {
-            reentrantReadWriteLock.readLock().unlock();
-        }
-    }
-
-    private void setQuote(Quote quote) {
-        reentrantReadWriteLock.writeLock().lock();
-        this.quote = quote;
-        reentrantReadWriteLock.writeLock().unlock();
-        newQuote.set(true);
+    public Map<Stock, Quote> getStockQuoteMap() {
+        return stockQuoteMap;
     }
 
     @Override
@@ -90,8 +73,8 @@ public class QuoteReceiver implements Closeable {
 
     private class QuotesWebSocket extends Endpoint {
         private final QuoteReceiver quoteReceiver;
-        private boolean lastQuoteIsNull = true;
-        private ZonedDateTime lastQuoteTime = null;
+        private final Map<Stock, ZonedDateTime> stockZonedDateTimeMap =
+                new HashMap<>();
 
         public QuotesWebSocket(QuoteReceiver quoteReceiver) {
             super();
@@ -138,31 +121,39 @@ public class QuoteReceiver implements Closeable {
                                 (message, TickerTape.class);
                         if (tickerTape != null) {
                             final Quote quote = tickerTape.getQuote();
-                            if (lastQuoteIsNull) {
-                                quoteReceiver.setQuote(quote);
-                                lastQuoteIsNull = false;
-                            } else {
-                                final ZonedDateTime currentQuoteTime =
-                                        quote.getQuoteTime();
+                            final Stock stock = new Stock(quote.getVenue(),
+                                    quote.getSymbol());
+                            final ZonedDateTime currentQuoteTime =
+                                    quote.getQuoteTime();
+                            if (stockZonedDateTimeMap.containsKey(stock)) {
+                                final ZonedDateTime lastQuoteTime =
+                                        stockZonedDateTimeMap.get(stock);
                                 if (lastQuoteTime == null) {
                                     if (currentQuoteTime == null) {
                                         logger.warn("Quote time is null.");
                                     } else {
-                                        quoteReceiver.setQuote(quote);
-                                        lastQuoteTime = quote.getQuoteTime();
+                                        setQuote(stock, currentQuoteTime,
+                                                quote);
                                     }
-                                } else if (currentQuoteTime != null &&
-                                        currentQuoteTime.isAfter(lastQuoteTime)) {
-                                    quoteReceiver.setQuote(quote);
-                                    lastQuoteTime = quote.getQuoteTime();
+                                } else if (currentQuoteTime != null) {
+                                    setQuote(stock, currentQuoteTime, quote);
                                 } // else keep last quote (do nothing)
-                            }
+                            } else if (currentQuoteTime != null) {
+                                setQuote(stock, currentQuoteTime, quote);
+                            } // else keep last quote (do nothing)
                         }
                     } catch (Exception e) {
                         logger.error("Error reading quote.", e);
                     }
                 }
             });
+        }
+
+        private void setQuote(final Stock stock,
+                              final ZonedDateTime currentQuoteTime,
+                              final Quote quote) {
+            stockZonedDateTimeMap.put(stock, currentQuoteTime);
+            stockQuoteMap.put(stock, quote);
         }
     }
 }

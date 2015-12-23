@@ -3,22 +3,29 @@ package levels;
 import ob.abstractions.Direction;
 import ob.abstractions.OrderType;
 import ob.backoffice.BackOfficeManager;
+import ob.backoffice.abstractions.Account;
 import ob.requests.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestLevel extends StockfighterLevel {
     @Override
-    public void execute() {
-        final String account = "EXB123456";
+    protected void actuallyPlay() {
+        final String accountId = "EXB123456";
         final String venue = "TESTEX";
         final String symbol = "FOOBAR";
         final boolean useQuoteReceiver = false;
         final boolean useExecutionReceiver = false;
         final boolean expireOrders = true;
 
+        final Account account = new Account(accountId, venue);
+        List<Account> accounts = new ArrayList<>(1);
+        accounts.add(account);
+
         try (final BackOfficeManager backOfficeManager =
-                     new BackOfficeManager(account, venue, symbol,
-                             useExecutionReceiver, expireOrders,
-                             useQuoteReceiver)) {
+                     new BackOfficeManager(accounts, useExecutionReceiver,
+                             expireOrders, useQuoteReceiver)) {
             final ApiHeartbeatRequest apiHeartbeatRequest =
                     new ApiHeartbeatRequest();
             logger.info(apiHeartbeatRequest.getResponse().toString());
@@ -39,15 +46,15 @@ public class TestLevel extends StockfighterLevel {
             logger.info(quoteRequest.getResponse().toString());
 
             final NewOrderRequest newOrderRequest = new NewOrderRequest(venue,
-                    symbol, account, 0, 100, Direction.BUY, OrderType.MARKET);
+                    symbol, accountId, 0, 100, Direction.BUY, OrderType.MARKET);
             logger.info(newOrderRequest.getResponse().toString());
 
             final AllOrdersRequest allOrdersRequest = new AllOrdersRequest(venue,
-                    account);
+                    accountId);
             logger.info(allOrdersRequest.getResponse().toString());
 
             final AllOrdersRequest allOrdersRequest2 = new AllOrdersRequest(venue,
-                    account, symbol);
+                    accountId, symbol);
             logger.info(allOrdersRequest2.getResponse().toString());
         }
     }

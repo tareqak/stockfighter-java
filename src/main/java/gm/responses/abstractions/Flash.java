@@ -7,6 +7,7 @@ public class Flash {
     private String success;
     private String warning;
     private String danger;
+    private String error;
 
     public String getInfo() {
         return info;
@@ -48,23 +49,32 @@ public class Flash {
         this.danger = danger;
     }
 
+    public String getError() {
+        return error;
+    }
+
+    @SuppressWarnings("unused")
+    @JsonProperty("error")
+    public void setError(final String error) {
+        this.error = error;
+    }
+
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Flash flash = (Flash) o;
+        final Flash f = (Flash) o;
 
-        if (info != null ? !info.equals(flash.info) : flash.info != null)
+        if (info != null ? !info.equals(f.info) : f.info != null)
             return false;
-        if (success != null ? !success.equals(flash.success) :
-                flash.success != null)
+        if (success != null ? !success.equals(f.success) : f.success != null)
             return false;
-        if (warning != null ? !warning.equals(flash.warning) :
-                flash.warning != null)
+        if (warning != null ? !warning.equals(f.warning) : f.warning != null)
             return false;
-        return danger != null ? danger.equals(flash.danger) :
-                flash.danger == null;
+        if (danger != null ? !danger.equals(f.danger) : f.danger != null)
+            return false;
+        return error != null ? error.equals(f.error) : f.error == null;
 
     }
 
@@ -74,6 +84,7 @@ public class Flash {
         result = 31 * result + (success != null ? success.hashCode() : 0);
         result = 31 * result + (warning != null ? warning.hashCode() : 0);
         result = 31 * result + (danger != null ? danger.hashCode() : 0);
+        result = 31 * result + (error != null ? error.hashCode() : 0);
         return result;
     }
 
@@ -88,6 +99,8 @@ public class Flash {
             stringBuilder.append("success=\"").append(success).append('\"');
         } else if (danger != null) {
             stringBuilder.append("danger=\"").append(danger).append('\"');
+        } else if (error != null) {
+            stringBuilder.append("error=\"").append(error).append('\"');
         }
         return stringBuilder.toString();
     }

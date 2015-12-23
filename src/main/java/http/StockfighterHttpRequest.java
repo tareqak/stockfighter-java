@@ -6,12 +6,10 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -21,6 +19,8 @@ import java.util.Properties;
 public abstract class StockfighterHttpRequest {
     private static final String apiKey;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static CloseableHttpClient httpClient;
 
     static {
         Properties properties = new Properties();
@@ -60,6 +60,11 @@ public abstract class StockfighterHttpRequest {
         this.requiresAuthorization = requiresAuthorization;
     }
 
+    // Must call this method prior to using subclasses
+    public static void setHttpClient(final CloseableHttpClient httpClient) {
+        StockfighterHttpRequest.httpClient = httpClient;
+    }
+
     protected abstract Class<? extends StockfighterHttpResponse>
     getResponseClass();
 
@@ -68,6 +73,10 @@ public abstract class StockfighterHttpRequest {
     }
 
     public StockfighterHttpResponse getResponse() {
+        if (httpClient == null) {
+            logger.error("HTTP client is null.");
+            return null; // TODO: better idea?
+        }
         HttpRequestBase httpRequestBase;
         String url = baseUrl.url + path;
         switch (httpRequestType) {
@@ -122,34 +131,30 @@ public abstract class StockfighterHttpRequest {
             httpRequestBase.addHeader("X-Starfighter-Authorization", apiKey);
             logger.debug("Adding API key");
         }
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            try (CloseableHttpResponse response =
-                         httpClient.execute(httpRequestBase)) {
-                StatusLine statusLine = response.getStatusLine();
-                int statusCode = statusLine.getStatusCode();
-                if (statusCode >= 300) {
-                    logger.error("{}: {}", statusCode,
-                            statusLine.getReasonPhrase());
-                    return null; // TODO: better idea?
-                }
-
-                if (statusCode != 200) {
-                    logger.warn("status  code: {}", statusCode);
-                }
-
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    return objectMapper.readValue(entity.getContent(),
-                            getResponseClass());
-                } else {
-                    logger.error("Response entity was null");
-                    return null; // TODO: better idea?
-                }
-            } catch (Exception e) {
-                logger.error("Error in HTTP response. ", e);
+        try (CloseableHttpResponse response =
+                     httpClient.execute(httpRequestBase)) {
+            StatusLine statusLine = response.getStatusLine();
+            int statusCode = statusLine.getStatusCode();
+            if (statusCode >= 300) {
+                logger.error("{}: {}", statusCode,
+                        statusLine.getReasonPhrase());
+                return null; // TODO: better idea?
             }
-        } catch (IOException e) {
-            logger.error("Error in HTTP client.", e);
+
+            if (statusCode != 200) {
+                logger.warn("status  code: {}", statusCode);
+            }
+
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                return objectMapper.readValue(entity.getContent(),
+                        getResponseClass());
+            } else {
+                logger.error("Response entity was null");
+                return null; // TODO: better idea?
+            }
+        } catch (Exception e) {
+            logger.error("Error in HTTP response. ", e);
         }
         return null; // TODO: better idea?
     }

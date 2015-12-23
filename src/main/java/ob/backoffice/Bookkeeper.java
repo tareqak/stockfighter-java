@@ -2,10 +2,7 @@ package ob.backoffice;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import ob.abstractions.Direction;
-import ob.abstractions.Fill;
-import ob.abstractions.Order;
-import ob.abstractions.OrderType;
+import ob.abstractions.*;
 import ob.backoffice.abstractions.*;
 import ob.backoffice.websocket.abstractions.Execution;
 import ob.responses.NewOrderResponse;
@@ -35,6 +32,7 @@ public class Bookkeeper implements Closeable {
     private final CashStatus cashStatus = new CashStatus();
     private final List<Thread> workers;
     private final AtomicBoolean done = new AtomicBoolean(false);
+    private String lastStatus = "";
 
     public Bookkeeper(final BlockingQueue<Execution> executionBlockingQueue,
                       final int numThreads, final boolean expireOrders) {
@@ -68,10 +66,11 @@ public class Bookkeeper implements Closeable {
         }
     }
 
-    public void logStatus(final Map<Stock, Integer> lastPriceMap) {
+    public void logStatus(final Map<Stock, QuoteStatistics>
+                                  quoteStatisticsMap) {
         Integer netAssetValue = 0;
         boolean first = true;
-        StringBuilder stringBuilder = new StringBuilder();
+        final StringBuilder stringBuilder = new StringBuilder();
         for (Map.Entry<Stock, Map<String, PositionStatus>> entry :
                 stockAccountPositionMap.entrySet()) {
             if (first) {
@@ -79,7 +78,7 @@ public class Bookkeeper implements Closeable {
             } else {
                 stringBuilder.append(' ');
             }
-            Stock stock = entry.getKey();
+            final Stock stock = entry.getKey();
             stringBuilder.append(stock).append(' ');
             final Map<String, PositionStatus> accountPositionMap =
                     entry.getValue();
@@ -94,13 +93,18 @@ public class Bookkeeper implements Closeable {
                 final String account = accountPosition.getKey();
                 final int position =
                         accountPosition.getValue().getPosition();
-                stringBuilder.append(account);
-                stringBuilder.append(" Position: ").append(position);
-                if (lastPriceMap.containsKey(stock)) {
-                    netAssetValue += lastPriceMap.get(stock) * position;
+                stringBuilder.append(account).append(":").append(position);
+                final QuoteStatistics quoteStatistics =
+                        quoteStatisticsMap.get(stock);
+                if (quoteStatistics == null) {
+                    logger.warn("No last price for {}:{}.", stock, account);
                 } else {
-                    logger.warn("No last price for {}:{}. Not included in NAV",
-                            stock, account);
+                    final Integer last = quoteStatistics.getLast();
+                    if (last == null) {
+                        logger.warn("No last price for {}:{}.", stock, account);
+                    } else {
+                        netAssetValue += last * position;
+                    }
                 }
             }
         }
@@ -111,7 +115,11 @@ public class Bookkeeper implements Closeable {
         netAssetValue += cash;
         stringBuilder.append("Cash: ").append(cash).
                 append(" NAV: ").append(netAssetValue);
-        logger.info(stringBuilder.toString());
+        final String status = stringBuilder.toString();
+        if (!status.equals(lastStatus)) {
+            logger.info(status);
+            lastStatus = status;
+        }
     }
 
     public int getPosition(final Stock stock,

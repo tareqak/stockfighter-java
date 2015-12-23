@@ -6,8 +6,7 @@ import http.StockfighterHttpResponse;
 
 public class LevelHeartbeatRequest extends StockfighterHttpRequest {
     public LevelHeartbeatRequest(final Integer instanceId) {
-        super(HttpRequestType.GET, BaseUrl.GM, "instances/" +
-                instanceId.toString(), true);
+        super(HttpRequestType.GET, BaseUrl.GM, "instances/" + instanceId, true);
     }
 
     @Override

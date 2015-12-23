@@ -108,13 +108,14 @@ public class Quote {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(venue)
                 .append(":").append(symbol)
-                .append(" bid: ").append(bid)
-                .append(" bidSize: ").append(bidSize)
-                .append(" bidDepth: ").append(bidDepth)
-                .append(" ask: ").append(ask)
-                .append(" askSize: ").append(askSize)
-                .append(" askDepth: ").append(askDepth)
-                .append(" last: ").append(last);
+                .append(" bid:").append(bid)
+                .append(":").append(bidSize)
+                .append(":").append(bidDepth)
+                .append(" ask:").append(ask)
+                .append(":").append(askSize)
+                .append(":").append(askDepth)
+                .append(" last:").append(last)
+                .append(":").append(lastSize);
         return stringBuilder.toString();
     }
 }
