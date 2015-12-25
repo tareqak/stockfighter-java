@@ -25,7 +25,6 @@ public class BackOfficeManager implements Closeable {
             LoggerFactory.getLogger(BackOfficeManager.class);
     private static final int BOOKKEEPER_WORKERS_PER_ACCOUNT = 4;
 
-    // TODO: These should be lists, but for another day
     // TODO: Assuming number of accounts == number of venues
     // per account/venue
     private final List<QuoteReceiver> quoteReceivers;
@@ -142,7 +141,9 @@ public class BackOfficeManager implements Closeable {
                     quoteStatistics = new QuoteStatistics();
                     quoteStatisticsMap.put(stock, quoteStatistics);
                 }
-                quoteStatistics.processQuote(quote);
+                if (quoteStatistics.processQuote(quote)) {
+                    logger.info("New quote: {}", quote);
+                }
             }
             return true;
         };

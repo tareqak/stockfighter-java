@@ -1,12 +1,8 @@
 package ob.abstractions;
 
 import ob.backoffice.websocket.abstractions.Quote;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class QuoteStatistics {
-    private static final Logger logger =
-            LoggerFactory.getLogger(QuoteStatistics.class);
     private final QuoteStatistic bid = new QuoteStatistic();
     private final QuoteStatistic ask = new QuoteStatistic();
     private Integer last = null;
@@ -48,7 +44,7 @@ public class QuoteStatistics {
         return askDepth;
     }
 
-    public void processQuote(final Quote quote) {
+    public boolean processQuote(final Quote quote) {
         final Integer bid = quote.getBid();
         final Integer bidSize = quote.getBidSize();
         final Integer bidDepth = quote.getBidDepth();
@@ -75,8 +71,9 @@ public class QuoteStatistics {
             this.askDepth = askDepth;
             this.last = last;
             this.lastSize = lastSize;
-            logger.info(quote.toString());
+            return true;
         }
+        return false;
     }
 
     public class QuoteStatistic {

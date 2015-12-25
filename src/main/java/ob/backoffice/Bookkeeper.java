@@ -91,9 +91,11 @@ public class Bookkeeper implements Closeable {
                     stringBuilder.append(' ');
                 }
                 final String account = accountPosition.getKey();
-                final int position =
-                        accountPosition.getValue().getPosition();
-                stringBuilder.append(account).append(":").append(position);
+                final PositionSnapshot positionSnapshot =
+                        accountPosition.getValue().getPositionSnapshot();
+                final int position = positionSnapshot.getPosition();
+                stringBuilder.append(account).append(":").append(position)
+                .append(":").append(positionSnapshot.getAverageSharePrice());
                 final QuoteStatistics quoteStatistics =
                         quoteStatisticsMap.get(stock);
                 if (quoteStatistics == null) {
@@ -124,7 +126,8 @@ public class Bookkeeper implements Closeable {
 
     public int getPosition(final Stock stock,
                            final String account) {
-        return getPositionStatus(stock, account).getPosition();
+        return getPositionStatus(stock, account).getPositionSnapshot()
+                .getPosition();
     }
 
     public void recordOrder(final NewOrderResponse newOrderResponse,
@@ -172,10 +175,10 @@ public class Bookkeeper implements Closeable {
                 }
                 if (direction == Direction.BUY) {
                     cashStatus.modifyCash(-sharePriceValue);
-                    positionStatus.modifyPosition(filled);
+                    positionStatus.modifyPosition(filled, sharePriceValue);
                 } else { // SELL
                     cashStatus.modifyCash(sharePriceValue);
-                    positionStatus.modifyPosition(-filled);
+                    positionStatus.modifyPosition(-filled, sharePriceValue);
                 }
                 orderStatus.addTotalFilled(filled);
                 orderStatus.setSharePriceValue(sharePriceValue);
@@ -288,10 +291,10 @@ public class Bookkeeper implements Closeable {
                             getPositionStatus(stock, orderAccount);
                     if (direction == Direction.BUY) {
                         cashStatus.modifyCash(-sharePriceValue);
-                        positionStatus.modifyPosition(filled);
+                        positionStatus.modifyPosition(filled, sharePriceValue);
                     } else { // SELL
                         cashStatus.modifyCash(sharePriceValue);
-                        positionStatus.modifyPosition(-filled);
+                        positionStatus.modifyPosition(-filled, sharePriceValue);
                     }
                     orderStatus.addTotalFilled(filled);
                     if (orderStatus.getQuantity().equals(
