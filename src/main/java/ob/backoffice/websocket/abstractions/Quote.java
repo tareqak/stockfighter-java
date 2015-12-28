@@ -2,6 +2,7 @@ package ob.backoffice.websocket.abstractions;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import utilities.Utilities;
 
 import java.time.ZonedDateTime;
 
@@ -108,14 +109,14 @@ public class Quote {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(venue)
                 .append(":").append(symbol)
-                .append(" bid:").append(bid)
-                .append(":").append(bidSize)
-                .append(":").append(bidDepth)
-                .append(" ask:").append(ask)
-                .append(":").append(askSize)
-                .append(":").append(askDepth)
-                .append(" last:").append(last)
-                .append(":").append(lastSize);
+                .append(" bid: ").append(Utilities.toCurrencyString(bid))
+                .append(" : ").append(bidSize)
+                .append(" : ").append(bidDepth)
+                .append(" ask: ").append(Utilities.toCurrencyString(ask))
+                .append(" : ").append(askSize)
+                .append(" : ").append(askDepth)
+                .append(" last: ").append(Utilities.toCurrencyString(last))
+                .append(" : ").append(lastSize);
         return stringBuilder.toString();
     }
 }

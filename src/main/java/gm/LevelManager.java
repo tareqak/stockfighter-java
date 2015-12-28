@@ -9,7 +9,7 @@ import gm.responses.abstractions.Details;
 import gm.responses.abstractions.Flash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import utilities.IntegerConstants;
+import utilities.Utilities;
 
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,8 +45,8 @@ public class LevelManager implements Closeable {
                         try {
                             for (int i = 0; i < 95; i += 5) {
                                 logger.info("{} s", i);
-                                Thread.sleep(5 * IntegerConstants
-                                        .MILLISECONDS_IN_A_SECOND.getValue());
+                                Thread.sleep(5 *
+                                        Utilities.MILLISECONDS_IN_A_SECOND);
                             }
                         } catch (InterruptedException e) {
                             logger.error("Error while sleeping.", e);
@@ -141,8 +141,8 @@ public class LevelManager implements Closeable {
                     break;
                 }
                 try {
-                    Thread.sleep(secondsInATradingDay * IntegerConstants
-                            .MILLISECONDS_IN_A_SECOND.getValue());
+                    Thread.sleep(secondsInATradingDay *
+                            Utilities.MILLISECONDS_IN_A_SECOND);
                 } catch (InterruptedException e) {
                     logger.error("Error while sleeping.", e);
                 }

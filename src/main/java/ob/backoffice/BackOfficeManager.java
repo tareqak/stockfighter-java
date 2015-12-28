@@ -3,11 +3,13 @@ package ob.backoffice;
 import ob.abstractions.QuoteStatistics;
 import ob.backoffice.abstractions.Account;
 import ob.backoffice.abstractions.OrderStatusContainer;
+import ob.backoffice.abstractions.PositionSnapshot;
 import ob.backoffice.abstractions.Stock;
 import ob.backoffice.websocket.ExecutionReceiver;
 import ob.backoffice.websocket.QuoteReceiver;
 import ob.backoffice.websocket.abstractions.Execution;
 import ob.backoffice.websocket.abstractions.Quote;
+import ob.requests.NewOrderRequest;
 import ob.responses.NewOrderResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +51,7 @@ public class BackOfficeManager implements Closeable {
         final int numAccounts = accounts.size();
         if (useExecutionReceiver) {
             numThreads = BOOKKEEPER_WORKERS_PER_ACCOUNT * numAccounts;
-            executionBlockingQueue = new ArrayBlockingQueue<>(numThreads * 3);
+            executionBlockingQueue = new LinkedBlockingQueue<>();
             this.executionReceivers = new ArrayList<>(numAccounts);
             this.executionReceivers.addAll(accounts.stream().map(
                     account -> new ExecutionReceiver(executionBlockingQueue,
@@ -107,13 +109,16 @@ public class BackOfficeManager implements Closeable {
         return quoteStatisticsMap;
     }
 
-    public void recordOrder(final NewOrderResponse newOrderResponse,
+    public void recordOrder(final NewOrderRequest newOrderRequest,
+                            final NewOrderResponse newOrderResponse,
                             final OrderStatusContainer orderStatusContainer) {
-        bookkeeper.recordOrder(newOrderResponse, orderStatusContainer);
+        bookkeeper.recordOrder(newOrderRequest,
+                newOrderResponse, orderStatusContainer);
     }
 
-    public int getPosition(final Stock stock, final String account) {
-        return bookkeeper.getPosition(stock, account);
+    public PositionSnapshot getPositionSnapshot(final Stock stock,
+                                                final String account) {
+        return bookkeeper.getPositionSnapshot(stock, account);
     }
 
     @Override
@@ -142,7 +147,7 @@ public class BackOfficeManager implements Closeable {
                     quoteStatisticsMap.put(stock, quoteStatistics);
                 }
                 if (quoteStatistics.processQuote(quote)) {
-                    logger.info("New quote: {}", quote);
+                    logger.info("Quote: {}", quote);
                 }
             }
             return true;

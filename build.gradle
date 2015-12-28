@@ -51,7 +51,7 @@ dependencies {
             name: 'tyrus-standalone-client-jdk',
             version: '1.12'
 
-    // Cache Builder (concurrent weak hashmap)
+    // Cache Builder (concurrent hashmap with expiring keys)
     compile group: 'com.google.guava',
             name: 'guava',
             version: '19.0'

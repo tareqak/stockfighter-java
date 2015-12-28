@@ -4,6 +4,7 @@ import ob.abstractions.Direction;
 import ob.abstractions.OrderType;
 
 import java.time.ZonedDateTime;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class OrderStatus {
     private final String account;
@@ -16,6 +17,8 @@ public class OrderStatus {
     private ZonedDateTime lastFilled = null;
     private Integer sharePriceValue = 0;
     private Integer id = null;
+    private final ReentrantReadWriteLock reentrantReadWriteLock =
+            new ReentrantReadWriteLock();
 
     public OrderStatus(final Stock stock,
                        final String account,
@@ -45,12 +48,20 @@ public class OrderStatus {
         this.quantity = quantity;
     }
 
-    public Integer getTotalFilled() {
-        return totalFilled;
+    public void update(final Integer filled, final Integer sharePriceValue) {
+        reentrantReadWriteLock.writeLock().lock();
+        totalFilled += filled;
+        this.sharePriceValue += sharePriceValue;
+        reentrantReadWriteLock.writeLock().unlock();
     }
 
-    public void addTotalFilled(final Integer filled) {
-        totalFilled += filled;
+    public OrderSnapshot getOrderSnapshot() {
+        try {
+            reentrantReadWriteLock.readLock().lock();
+            return new OrderSnapshot(totalFilled, sharePriceValue);
+        } finally {
+            reentrantReadWriteLock.readLock().unlock();
+        }
     }
 
     public ZonedDateTime getLastFilled() {
@@ -59,14 +70,6 @@ public class OrderStatus {
 
     public void setLastFilled(final ZonedDateTime lastFilled) {
         this.lastFilled = lastFilled;
-    }
-
-    public Integer getSharePriceValue() {
-        return sharePriceValue;
-    }
-
-    public void setSharePriceValue(final Integer sharePriceValue) {
-        this.sharePriceValue = sharePriceValue;
     }
 
     public String getAccount() {
