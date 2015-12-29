@@ -37,7 +37,8 @@ public class Bookkeeper implements Closeable {
     private String lastStatus = "";
 
     public Bookkeeper(final BlockingQueue<Execution> executionBlockingQueue,
-                      final int numThreads, final boolean expireOrders) {
+                      final int numThreads, final boolean expireOrders,
+                      final List<Account> accounts, final List<Stock> stocks) {
         this.executionBlockingQueue = executionBlockingQueue;
         if (expireOrders) {
             orderStatusCache = CacheBuilder.newBuilder().initialCapacity(10)
@@ -45,6 +46,23 @@ public class Bookkeeper implements Closeable {
         } else {
             orderStatusCache = CacheBuilder.newBuilder().initialCapacity(10)
                     .build();
+        }
+        for (final Stock stock : stocks) {
+            for (final Account account : accounts) {
+                if (stock.getVenue().equals(account.getVenue())) {
+                    final PositionStatus positionStatus = new PositionStatus();
+                    if (stockAccountPositionMap.containsKey(stock)) {
+                        final Map<String, PositionStatus> accountPositionMap =
+                                stockAccountPositionMap.get(stock);
+                        accountPositionMap.put(account.getId(), positionStatus);
+                    } else {
+                        Map<String, PositionStatus> accountPositionMap =
+                                new HashMap<>();
+                        accountPositionMap.put(account.getId(), positionStatus);
+                        stockAccountPositionMap.put(stock, accountPositionMap);
+                    }
+                }
+            }
         }
         this.workers = new ArrayList<>(numThreads);
         for (int i = 0; i < numThreads; i += 1) {
@@ -98,7 +116,7 @@ public class Bookkeeper implements Closeable {
                 final int position = positionSnapshot.getPosition();
                 stringBuilder.append(account).append(": Position: ").append
                         (position)
-                .append(" Average Share Price: ").append(
+                        .append(" Average Share Price: ").append(
                         Utilities.toCurrencyString(
                                 positionSnapshot.getAverageSharePrice()));
                 final QuoteStatistics quoteStatistics =
@@ -156,7 +174,7 @@ public class Bookkeeper implements Closeable {
             }
         }
         final OrderType orderType = order.getOrderType();
-        if (orderType == OrderType.LIMIT) {
+        if (orderType == OrderType.LIMIT || orderType == OrderType.MARKET) {
             return;
         }
         final Stock stock = orderStatus.getStock();
@@ -192,7 +210,6 @@ public class Bookkeeper implements Closeable {
             }
             orderStatus.update(filled, sharePriceValue);
             if (!order.getOpen()) {
-                orderStatus.complete();
                 orderStatusCache.invalidate(id);
             }
         }
@@ -224,6 +241,10 @@ public class Bookkeeper implements Closeable {
         orderStatusCache.invalidate(id);
     }
 
+    public int getCash() {
+        return cashStatus.getCash();
+    }
+
     private class Worker implements Runnable {
         @Override
         public void run() {
@@ -231,7 +252,7 @@ public class Bookkeeper implements Closeable {
             while (true) {
                 try {
                     final Execution execution = executionBlockingQueue.poll(10,
-                                    TimeUnit.MILLISECONDS);
+                            TimeUnit.MILLISECONDS);
                     if (execution == null) {
                         if (done.get()) {
                             break;
@@ -241,7 +262,9 @@ public class Bookkeeper implements Closeable {
                     }
                     final Order order = execution.getOrder();
 
-                    if (order.getOrderType() != OrderType.LIMIT) {
+                    final OrderType orderType = order.getOrderType();
+                    if (orderType != OrderType.LIMIT &&
+                            orderType != OrderType.MARKET) {
                         continue;
                     }
 
@@ -322,9 +345,8 @@ public class Bookkeeper implements Closeable {
                     if (orderId.equals(execution.getIncomingId()) &&
                             execution.getIncomingComplete() ||
                             orderId.equals(execution.getStandingId()) &&
-                            execution.getStandingComplete()) {
+                                    execution.getStandingComplete()) {
                         // Remove the executions that are completely filled
-                        orderStatus.complete();
                         orderStatusCache.invalidate(orderId);
                     }
                 } catch (InterruptedException e) {

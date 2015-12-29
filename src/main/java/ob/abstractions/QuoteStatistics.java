@@ -8,18 +8,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class QuoteStatistics {
     private final QuoteStatistic bid = new QuoteStatistic();
     private final QuoteStatistic ask = new QuoteStatistic();
-    private Integer last = null;
-    private Integer bidSize = null;
-    private Integer bidDepth = null;
-    private Integer askSize = null;
-    private Integer askDepth = null;
-    private Integer lastSize = null;
     private final ReentrantReadWriteLock bidReentrantReadWriteLock =
             new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock askReentrantReadWriteLock =
             new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock lastReentrantReadWriteLock =
             new ReentrantReadWriteLock();
+    private Integer last = null;
+    private Integer bidSize = null;
+    private Integer bidDepth = null;
+    private Integer askSize = null;
+    private Integer askDepth = null;
+    private Integer lastSize = null;
 
     public QuoteStatistic getBid() {
         try {
@@ -110,10 +110,10 @@ public class QuoteStatistics {
     }
 
     public class QuoteStatistic {
-        private Integer currentValue = null;
-        private boolean assigned = false;
         private final DescriptiveStatistics descriptiveStatistics =
                 new DescriptiveStatistics();
+        private Integer currentValue = null;
+        private boolean assigned = false;
 
         private QuoteStatistic() {
         }

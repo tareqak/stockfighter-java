@@ -26,4 +26,12 @@ public abstract class StockfighterLevel {
             logger.error("Error.", e);
         }
     }
+
+    protected void sleep(long milliseconds) {
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException e) {
+            logger.error("Interrupted while sleeping.", e);
+        }
+    }
 }

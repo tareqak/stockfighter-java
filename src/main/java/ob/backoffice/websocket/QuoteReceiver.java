@@ -11,6 +11,7 @@ import javax.websocket.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class QuoteReceiver implements Closeable {
         connect();
     }
 
-    public void connect() {
+    private void connect() {
         while (true) {
             try {
                 logger.debug("Attempting to connect to {}", url);
@@ -100,14 +101,23 @@ public class QuoteReceiver implements Closeable {
 
         @Override
         public void onOpen(Session session, EndpointConfig config) {
-            logger.info("Started session with id {}", session.getId());
+            logger.info("Started session with id {}.", session.getId());
+            final RemoteEndpoint.Async remote = session.getAsyncRemote();
+            final String pingString = "p";
+            final ByteBuffer byteBuffer = ByteBuffer.allocate(
+                    pingString.getBytes().length);
 
             // Do not use lambdas because they do not resolve correctly
             session.addMessageHandler(new MessageHandler.Whole<PongMessage>() {
                 @Override
                 public void onMessage(PongMessage message) {
-                    logger.info("PONG: {}", message.toString());
-                    session.getAsyncRemote().sendText("p");
+                    logger.info("PONG: {}",
+                            new String(message.getApplicationData().array()));
+                    try {
+                        remote.sendPing(byteBuffer);
+                    } catch (IOException e) {
+                        logger.error("Error sending ping.", e);
+                    }
                 }
             });
 

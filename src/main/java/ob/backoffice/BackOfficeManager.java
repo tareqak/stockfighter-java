@@ -33,16 +33,15 @@ public class BackOfficeManager implements Closeable {
     private final List<ExecutionReceiver> executionReceivers;
     private final List<Future<Boolean>> futures;
 
-    // per stock
-    private final Map<Stock, QuoteStatistics> quoteStatisticsMap =
-            new ConcurrentHashMap<>();
-
     // one
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final Bookkeeper bookkeeper;
     private final ExecutorService quoteReceiverPool;
+    private final Map<Stock, QuoteStatistics> quoteStatisticsMap =
+            new ConcurrentHashMap<>();
 
     public BackOfficeManager(final List<Account> accounts,
+                             final List<Stock> stocks,
                              final boolean useExecutionReceiver,
                              final boolean expireOrders,
                              final boolean useQuoteReceiver) {
@@ -77,7 +76,10 @@ public class BackOfficeManager implements Closeable {
             this.futures = null;
         }
         this.bookkeeper = new Bookkeeper(executionBlockingQueue, numThreads,
-                expireOrders);
+                expireOrders, accounts, stocks);
+        for (final Stock stock : stocks) {
+            quoteStatisticsMap.put(stock, new QuoteStatistics());
+        }
     }
 
     public void gatherStatistics() {
@@ -125,13 +127,15 @@ public class BackOfficeManager implements Closeable {
         bookkeeper.invalidateOrder(id);
     }
 
+    public int getCash() {
+        return bookkeeper.getCash();
+    }
+
     @Override
     public void close() {
         done.set(true);
         if (quoteReceivers != null) {
             quoteReceivers.forEach(QuoteReceiver::close);
-        }
-        if (quoteReceiverPool != null) {
             quoteReceiverPool.shutdown();
         }
         if (executionReceivers != null) {

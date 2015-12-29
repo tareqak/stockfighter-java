@@ -4,6 +4,7 @@ import ob.abstractions.Direction;
 import ob.abstractions.OrderType;
 import ob.backoffice.BackOfficeManager;
 import ob.backoffice.abstractions.Account;
+import ob.backoffice.abstractions.Stock;
 import ob.requests.*;
 
 import java.util.ArrayList;
@@ -15,17 +16,19 @@ public class TestLevel extends StockfighterLevel {
         final String accountId = "EXB123456";
         final String venue = "TESTEX";
         final String symbol = "FOOBAR";
-        final boolean useQuoteReceiver = false;
-        final boolean useExecutionReceiver = false;
+        final boolean useQuoteReceiver = true;
+        final boolean useExecutionReceiver = true;
         final boolean expireOrders = true;
 
-        final Account account = new Account(accountId, venue);
         List<Account> accounts = new ArrayList<>(1);
-        accounts.add(account);
+        accounts.add(new Account(accountId, venue));
+        List<Stock> stocks = new ArrayList<>(1);
+        stocks.add(new Stock(venue, symbol));
 
         try (final BackOfficeManager backOfficeManager =
-                     new BackOfficeManager(accounts, useExecutionReceiver,
-                             expireOrders, useQuoteReceiver)) {
+                     new BackOfficeManager(accounts, stocks,
+                             useExecutionReceiver, expireOrders,
+                             useQuoteReceiver)) {
             final ApiHeartbeatRequest apiHeartbeatRequest =
                     new ApiHeartbeatRequest();
             logger.info(apiHeartbeatRequest.getResponse().toString());

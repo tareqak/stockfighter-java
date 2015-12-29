@@ -13,12 +13,12 @@ public class OrderStatus {
     private final OrderType orderType;
     private final Integer price;
     private final Integer quantity;
+    private final ReentrantReadWriteLock reentrantReadWriteLock =
+            new ReentrantReadWriteLock();
     private Integer totalFilled = 0;
     private ZonedDateTime lastFilled = null;
     private Integer sharePriceValue = 0;
     private Integer id = null;
-    private final ReentrantReadWriteLock reentrantReadWriteLock =
-            new ReentrantReadWriteLock();
 
     public OrderStatus(final Stock stock,
                        final String account,

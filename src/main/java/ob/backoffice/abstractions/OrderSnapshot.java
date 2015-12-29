@@ -1,20 +1,19 @@
 package ob.backoffice.abstractions;
 
 public class OrderSnapshot {
-    private final Integer totalFilled;
-    private final Integer sharePriceValue;
+    private final int totalFilled;
+    private final int sharePriceValue;
 
-    public OrderSnapshot(final Integer totalFilled,
-                         final Integer sharePriceValue) {
+    public OrderSnapshot(final int totalFilled, final int sharePriceValue) {
         this.totalFilled = totalFilled;
         this.sharePriceValue = sharePriceValue;
     }
 
-    public Integer getTotalFilled() {
+    public int getTotalFilled() {
         return totalFilled;
     }
 
-    public Integer getSharePriceValue() {
+    public int getSharePriceValue() {
         return sharePriceValue;
     }
 }
