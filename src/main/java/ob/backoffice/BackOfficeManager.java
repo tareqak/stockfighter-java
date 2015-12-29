@@ -121,11 +121,18 @@ public class BackOfficeManager implements Closeable {
         return bookkeeper.getPositionSnapshot(stock, account);
     }
 
+    public void invalidateOrder(final int id) {
+        bookkeeper.invalidateOrder(id);
+    }
+
     @Override
     public void close() {
         done.set(true);
         if (quoteReceivers != null) {
             quoteReceivers.forEach(QuoteReceiver::close);
+        }
+        if (quoteReceiverPool != null) {
+            quoteReceiverPool.shutdown();
         }
         if (executionReceivers != null) {
             executionReceivers.forEach(ExecutionReceiver::close);
@@ -147,7 +154,7 @@ public class BackOfficeManager implements Closeable {
                     quoteStatisticsMap.put(stock, quoteStatistics);
                 }
                 if (quoteStatistics.processQuote(quote)) {
-                    logger.info("Quote: {}", quote);
+                    logger.debug("Quote: {}", quote);
                 }
             }
             return true;

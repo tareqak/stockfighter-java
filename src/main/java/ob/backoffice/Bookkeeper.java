@@ -62,8 +62,8 @@ public class Bookkeeper implements Closeable {
             try {
                 logger.debug("Stopping worker.");
                 worker.join();
-            } catch (InterruptedException ie) {
-                logger.error("Error stopping worker.", ie);
+            } catch (InterruptedException e) {
+                logger.error("Error stopping worker.", e);
             }
         }
     }
@@ -96,9 +96,11 @@ public class Bookkeeper implements Closeable {
                 final PositionSnapshot positionSnapshot =
                         accountPosition.getValue().getPositionSnapshot();
                 final int position = positionSnapshot.getPosition();
-                stringBuilder.append(account).append(": ").append(position)
-                .append(" : ").append(Utilities.toCurrencyString(
-                        positionSnapshot.getAverageSharePrice()));
+                stringBuilder.append(account).append(": Position: ").append
+                        (position)
+                .append(" Average Share Price: ").append(
+                        Utilities.toCurrencyString(
+                                positionSnapshot.getAverageSharePrice()));
                 final QuoteStatistics quoteStatistics =
                         quoteStatisticsMap.get(stock);
                 if (quoteStatistics == null) {
@@ -109,6 +111,8 @@ public class Bookkeeper implements Closeable {
                         logger.warn("No last price for {}.", stock);
                     } else {
                         netAssetValue += last * position;
+                        stringBuilder.append(" Last: ").append(
+                                Utilities.toCurrencyString(last));
                     }
                 }
             }
@@ -142,17 +146,19 @@ public class Bookkeeper implements Closeable {
         final OrderStatus orderStatus = newOrderRequest.getOrderStatus();
         final Integer id = order.getId();
         orderStatus.setId(id);
-        orderStatusContainer.setOrderStatus(orderStatus);
-//        final OrderType orderType = order.getOrderType();
-//        while (true) {
-//            try {
-//                orderStatusContainer.setOrderStatus(
-//                        orderStatusCache.get(id, () -> orderStatus));
-//                break;
-//            } catch (ExecutionException e) {
-//                logger.error("Cache insertion error.", e);
-//            }
-//        }
+        while (true) {
+            try {
+                orderStatusContainer.setOrderStatus(
+                        orderStatusCache.get(id, () -> orderStatus));
+                break;
+            } catch (ExecutionException e) {
+                logger.error("Cache insertion error.", e);
+            }
+        }
+        final OrderType orderType = order.getOrderType();
+        if (orderType == OrderType.LIMIT) {
+            return;
+        }
         final Stock stock = orderStatus.getStock();
         final String account = orderStatus.getAccount();
         final PositionStatus positionStatus = getPositionStatus(stock, account);
@@ -171,9 +177,9 @@ public class Bookkeeper implements Closeable {
                 }
                 int p = fill.getPrice();
                 int q = fill.getQuantity();
-                logger.info("{} {} share(s) of {}:{} @ {}",
-                        direction.name(), q, account, stock,
-                        Utilities.toCurrencyString(p));
+                logger.info("{} {} share(s) of {} @ {} for {}.",
+                        direction.name(), q, stock,
+                        Utilities.toCurrencyString(p), account);
                 filled += q;
                 sharePriceValue += p * q;
             }
@@ -185,6 +191,10 @@ public class Bookkeeper implements Closeable {
                 positionStatus.modifyPosition(-filled, sharePriceValue);
             }
             orderStatus.update(filled, sharePriceValue);
+            if (!order.getOpen()) {
+                orderStatus.complete();
+                orderStatusCache.invalidate(id);
+            }
         }
     }
 
@@ -210,22 +220,30 @@ public class Bookkeeper implements Closeable {
         return positionStatus;
     }
 
+    public void invalidateOrder(final int id) {
+        orderStatusCache.invalidate(id);
+    }
+
     private class Worker implements Runnable {
         @Override
         public void run() {
             logger.debug("Worker started.");
             while (true) {
                 try {
-                    if (done.get()) {
-                        break;
+                    final Execution execution = executionBlockingQueue.poll(10,
+                                    TimeUnit.MILLISECONDS);
+                    if (execution == null) {
+                        if (done.get()) {
+                            break;
+                        } else {
+                            continue;
+                        }
                     }
-                    final Execution execution = executionBlockingQueue.take();
                     final Order order = execution.getOrder();
 
-//                    if (order.getOrderType() != OrderType.LIMIT) {
-//                        logger.debug("Non-LIMIT order ignored.");
-//                        continue;
-//                    }
+                    if (order.getOrderType() != OrderType.LIMIT) {
+                        continue;
+                    }
 
                     final String orderAccount = order.getAccount();
                     final String orderVenue = order.getVenue();
@@ -256,6 +274,7 @@ public class Bookkeeper implements Closeable {
                                             direction, order.getOrderType(),
                                             order.getPrice(),
                                             order.getOriginalQuantity()));
+                            orderStatus.setId(orderId);
                             break;
                         } catch (ExecutionException e) {
                             logger.warn("Cache insertion error.", e);
@@ -283,9 +302,9 @@ public class Bookkeeper implements Closeable {
                         }
                         int p = fill.getPrice();
                         int q = fill.getQuantity();
-                        logger.info("{} {} shares of {}:{} @ {}",
-                                direction.name(), q, orderAccount, stock,
-                                Utilities.toCurrencyString(p));
+                        logger.info("{} {} shares of {} @ {} for {}.",
+                                direction.name(), q, stock,
+                                Utilities.toCurrencyString(p), orderAccount);
                         filled += q;
                         sharePriceValue += p * q;
                     }
@@ -300,11 +319,12 @@ public class Bookkeeper implements Closeable {
                         positionStatus.modifyPosition(-filled, sharePriceValue);
                     }
                     orderStatus.update(filled, sharePriceValue);
-                    final OrderSnapshot orderSnapshot = orderStatus
-                            .getOrderSnapshot();
-                    if (orderStatus.getQuantity().equals(
-                            orderSnapshot.getTotalFilled())) {
+                    if (orderId.equals(execution.getIncomingId()) &&
+                            execution.getIncomingComplete() ||
+                            orderId.equals(execution.getStandingId()) &&
+                            execution.getStandingComplete()) {
                         // Remove the executions that are completely filled
+                        orderStatus.complete();
                         orderStatusCache.invalidate(orderId);
                     }
                 } catch (InterruptedException e) {

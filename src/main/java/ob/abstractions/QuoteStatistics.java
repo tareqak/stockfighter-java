@@ -1,6 +1,9 @@
 package ob.abstractions;
 
 import ob.backoffice.websocket.abstractions.Quote;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class QuoteStatistics {
     private final QuoteStatistic bid = new QuoteStatistic();
@@ -11,17 +14,38 @@ public class QuoteStatistics {
     private Integer askSize = null;
     private Integer askDepth = null;
     private Integer lastSize = null;
+    private final ReentrantReadWriteLock bidReentrantReadWriteLock =
+            new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock askReentrantReadWriteLock =
+            new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lastReentrantReadWriteLock =
+            new ReentrantReadWriteLock();
 
     public QuoteStatistic getBid() {
-        return bid;
+        try {
+            bidReentrantReadWriteLock.readLock().lock();
+            return bid;
+        } finally {
+            bidReentrantReadWriteLock.readLock().unlock();
+        }
     }
 
     public QuoteStatistic getAsk() {
-        return ask;
+        try {
+            askReentrantReadWriteLock.readLock().lock();
+            return ask;
+        } finally {
+            askReentrantReadWriteLock.readLock().unlock();
+        }
     }
 
     public Integer getLast() {
-        return last;
+        try {
+            lastReentrantReadWriteLock.readLock().lock();
+            return last;
+        } finally {
+            lastReentrantReadWriteLock.readLock().unlock();
+        }
     }
 
     public Integer getBidSize() {
@@ -63,14 +87,23 @@ public class QuoteStatistics {
                 (askDepth != null && !askDepth.equals(this.askDepth)) ||
                 (last != null && !last.equals(this.last)) ||
                 (lastSize != null && !lastSize.equals(this.lastSize))) {
+            bidReentrantReadWriteLock.writeLock().lock();
             this.bid.setCurrentValue(bid);
+            bidReentrantReadWriteLock.writeLock().unlock();
             this.bidSize = bidSize;
             this.bidDepth = bidDepth;
+
+            askReentrantReadWriteLock.writeLock().lock();
             this.ask.setCurrentValue(ask);
+            askReentrantReadWriteLock.writeLock().unlock();
             this.askSize = askSize;
             this.askDepth = askDepth;
+
+            lastReentrantReadWriteLock.writeLock().lock();
             this.last = last;
+            lastReentrantReadWriteLock.writeLock().unlock();
             this.lastSize = lastSize;
+
             return true;
         }
         return false;
@@ -78,19 +111,15 @@ public class QuoteStatistics {
 
     public class QuoteStatistic {
         private Integer currentValue = null;
-        private Integer lastNotNull = null;
-        private Integer maximum = Integer.MIN_VALUE;
-        private Integer minimum = Integer.MAX_VALUE;
+        private boolean assigned = false;
+        private final DescriptiveStatistics descriptiveStatistics =
+                new DescriptiveStatistics();
 
         private QuoteStatistic() {
         }
 
-        public Integer getMaximum() {
-            return maximum;
-        }
-
-        public Integer getMinimum() {
-            return minimum;
+        public DescriptiveStatistics getDescriptiveStatistics() {
+            return descriptiveStatistics;
         }
 
         public Integer getCurrentValue() {
@@ -100,14 +129,13 @@ public class QuoteStatistics {
         public void setCurrentValue(Integer i) {
             currentValue = i;
             if (i != null) {
-                lastNotNull = i;
-                maximum = Math.max(maximum, i);
-                minimum = Math.min(minimum, i);
+                assigned = true;
+                descriptiveStatistics.addValue(i);
             }
         }
 
-        public Integer getLastNotNull() {
-            return lastNotNull;
+        public boolean isAssigned() {
+            return assigned;
         }
     }
 }
