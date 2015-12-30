@@ -31,14 +31,15 @@ public class Bookkeeper implements Closeable {
             stockAccountPositionMap = new HashMap<>(10);
     private final Cache<Integer, OrderStatus> orderStatusCache;
 
-    private final CashStatus cashStatus = new CashStatus();
+    private final CashStatus cashStatus;
     private final List<Thread> workers;
     private final AtomicBoolean done = new AtomicBoolean(false);
     private String lastStatus = "";
 
     public Bookkeeper(final BlockingQueue<Execution> executionBlockingQueue,
                       final int numThreads, final boolean expireOrders,
-                      final List<Account> accounts, final List<Stock> stocks) {
+                      final List<Account> accounts, final List<Stock> stocks,
+                      final int startingCash) {
         this.executionBlockingQueue = executionBlockingQueue;
         if (expireOrders) {
             orderStatusCache = CacheBuilder.newBuilder().initialCapacity(10)
@@ -64,6 +65,7 @@ public class Bookkeeper implements Closeable {
                 }
             }
         }
+        cashStatus = new CashStatus(startingCash);
         this.workers = new ArrayList<>(numThreads);
         for (int i = 0; i < numThreads; i += 1) {
             Thread t = new Thread(new Worker());

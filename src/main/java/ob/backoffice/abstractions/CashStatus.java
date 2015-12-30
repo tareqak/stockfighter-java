@@ -5,7 +5,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class CashStatus {
     private final ReentrantReadWriteLock cashReentrantReadWriteLock =
             new ReentrantReadWriteLock();
-    private int cash = 0;
+    private int cash;
+
+    public CashStatus(final int cash) {
+        this.cash = cash;
+    }
 
     public int getCash() {
         try {

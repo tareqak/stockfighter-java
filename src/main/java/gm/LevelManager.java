@@ -91,6 +91,7 @@ public class LevelManager implements Closeable {
     @Override
     public void close() {
         try {
+            done.set(true);
             logger.info("Stopping levelHeartbeatCheckerThread.");
             levelHeartbeatCheckerThread.join();
         } catch (InterruptedException e) {
@@ -138,6 +139,8 @@ public class LevelManager implements Closeable {
                         state.equals("lost"))) {
                     done.set(true);
                     logger.info("Received state \"{}\".", state);
+                }
+                if (done.get()) {
                     break;
                 }
                 try {

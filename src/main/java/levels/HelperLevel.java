@@ -26,8 +26,9 @@ public class HelperLevel extends StockfighterLevel {
             final Stock stock = new Stock(venue, symbol);
             List<Stock> stocks = new ArrayList<>(1);
             stocks.add(stock);
+            final int startingCash = levelResponse.getBalances().get("USD");
             try (final BackOfficeManager backOfficeManager =
-                         new BackOfficeManager(accounts, stocks,
+                         new BackOfficeManager(accounts, stocks, startingCash,
                                  useExecutionReceiver, expireOrders,
                                  useQuoteReceiver)) {
                 while (!levelManager.isLevelComplete()) {

@@ -42,6 +42,7 @@ public class BackOfficeManager implements Closeable {
 
     public BackOfficeManager(final List<Account> accounts,
                              final List<Stock> stocks,
+                             final int startingCash,
                              final boolean useExecutionReceiver,
                              final boolean expireOrders,
                              final boolean useQuoteReceiver) {
@@ -76,7 +77,7 @@ public class BackOfficeManager implements Closeable {
             this.futures = null;
         }
         this.bookkeeper = new Bookkeeper(executionBlockingQueue, numThreads,
-                expireOrders, accounts, stocks);
+                expireOrders, accounts, stocks, startingCash);
         for (final Stock stock : stocks) {
             quoteStatisticsMap.put(stock, new QuoteStatistics());
         }

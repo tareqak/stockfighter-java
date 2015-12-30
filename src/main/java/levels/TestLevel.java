@@ -26,7 +26,7 @@ public class TestLevel extends StockfighterLevel {
         stocks.add(new Stock(venue, symbol));
 
         try (final BackOfficeManager backOfficeManager =
-                     new BackOfficeManager(accounts, stocks,
+                     new BackOfficeManager(accounts, stocks, 0,
                              useExecutionReceiver, expireOrders,
                              useQuoteReceiver)) {
             final ApiHeartbeatRequest apiHeartbeatRequest =
