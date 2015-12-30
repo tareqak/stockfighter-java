@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Details {
-    private Integer endOfTheWorldDay;
-    private Integer tradingDay;
+    private final Integer endOfTheWorldDay;
+    private final Integer tradingDay;
     private Integer executionTime;
 
     @JsonCreator
-    public Details(@JsonProperty("endOfTheWorldDay") Integer endOfTheWorldDay,
-                   @JsonProperty("tradingDay") Integer tradingDay) {
+    public Details(@JsonProperty("endOfTheWorldDay")
+                       final Integer endOfTheWorldDay,
+                   @JsonProperty("tradingDay") final Integer tradingDay) {
         this.endOfTheWorldDay = endOfTheWorldDay;
         this.tradingDay = tradingDay;
     }

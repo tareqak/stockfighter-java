@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class OrderStatus {
     private final String account;
-    private final Stock stock;
+    private final Stocks.Stock stock;
     private final Direction direction;
     private final OrderType orderType;
     private final Integer price;
@@ -20,7 +20,7 @@ public class OrderStatus {
     private Integer sharePriceValue = 0;
     private Integer id = null;
 
-    public OrderStatus(final Stock stock,
+    public OrderStatus(final Stocks.Stock stock,
                        final String account,
                        final String direction,
                        final String orderType,
@@ -34,7 +34,7 @@ public class OrderStatus {
         this.quantity = quantity;
     }
 
-    public OrderStatus(final Stock stock,
+    public OrderStatus(final Stocks.Stock stock,
                        final String account,
                        final Direction direction,
                        final OrderType orderType,
@@ -76,7 +76,7 @@ public class OrderStatus {
         return account;
     }
 
-    public Stock getStock() {
+    public Stocks.Stock getStock() {
         return stock;
     }
 

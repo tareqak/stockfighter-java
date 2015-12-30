@@ -3,10 +3,9 @@ package levels;
 import gm.LevelManager;
 import gm.responses.LevelResponse;
 import ob.backoffice.BackOfficeManager;
-import ob.backoffice.abstractions.Account;
-import ob.backoffice.abstractions.Stock;
+import ob.backoffice.abstractions.Accounts;
+import ob.backoffice.abstractions.Stocks;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class HelperLevel extends StockfighterLevel {
@@ -21,11 +20,10 @@ public class HelperLevel extends StockfighterLevel {
             final String venue = levelResponse.getVenues().get(0);
             final String accountId = levelResponse.getAccount();
             final String symbol = levelResponse.getTickers().get(0);
-            List<Account> accounts = new ArrayList<>(1);
-            accounts.add(new Account(accountId, venue));
-            final Stock stock = new Stock(venue, symbol);
-            List<Stock> stocks = new ArrayList<>(1);
-            stocks.add(stock);
+            final Stocks.Stock stock = Stocks.getStock(venue, symbol);
+            Accounts.getAccount(venue, accountId);
+            final List<Stocks.Stock> stocks = Stocks.getStocks();
+            final List<Accounts.Account> accounts = Accounts.getAccounts();
             final int startingCash = levelResponse.getBalances().get("USD");
             try (final BackOfficeManager backOfficeManager =
                          new BackOfficeManager(accounts, stocks, startingCash,

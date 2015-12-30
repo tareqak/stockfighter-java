@@ -5,7 +5,7 @@ import http.StockfighterHttpResponse;
 import ob.abstractions.Direction;
 import ob.abstractions.OrderType;
 import ob.backoffice.abstractions.OrderStatus;
-import ob.backoffice.abstractions.Stock;
+import ob.backoffice.abstractions.Stocks;
 import ob.responses.NewOrderResponse;
 
 public class NewOrderRequest extends StockfighterHttpRequest {
@@ -24,8 +24,8 @@ public class NewOrderRequest extends StockfighterHttpRequest {
         if (orderType != OrderType.MARKET) {
             addParameter("price", price);
         }
-        this.orderStatus = new OrderStatus(new Stock(venue, stock), account,
-                direction, orderType, price, quantity);
+        this.orderStatus = new OrderStatus(Stocks.getStock(venue, stock),
+                account, direction, orderType, price, quantity);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package ob.backoffice.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ob.backoffice.abstractions.Stock;
+import ob.backoffice.abstractions.Stocks;
 import ob.backoffice.websocket.abstractions.Quote;
 import ob.backoffice.websocket.abstractions.TickerTape;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ public class QuoteReceiver implements Closeable {
     private final WebSocketContainer webSocketContainer =
             ContainerProvider.getWebSocketContainer();
     private final AtomicBoolean done = new AtomicBoolean(false);
-    private final Map<Stock, Quote> stockQuoteMap =
+    private final Map<Stocks.Stock, Quote> stockQuoteMap =
             new ConcurrentHashMap<>(10);
     private Session session;
 
@@ -57,7 +57,7 @@ public class QuoteReceiver implements Closeable {
         }
     }
 
-    public Map<Stock, Quote> getStockQuoteMap() {
+    public Map<Stocks.Stock, Quote> getStockQuoteMap() {
         return stockQuoteMap;
     }
 
@@ -74,7 +74,7 @@ public class QuoteReceiver implements Closeable {
 
     private class QuotesWebSocket extends Endpoint {
         private final QuoteReceiver quoteReceiver;
-        private final Map<Stock, ZonedDateTime> stockZonedDateTimeMap =
+        private final Map<Stocks.Stock, ZonedDateTime> stockZonedDateTimeMap =
                 new HashMap<>();
 
         public QuotesWebSocket(QuoteReceiver quoteReceiver) {
@@ -131,8 +131,8 @@ public class QuoteReceiver implements Closeable {
                                 (message, TickerTape.class);
                         if (tickerTape != null) {
                             final Quote quote = tickerTape.getQuote();
-                            final Stock stock = new Stock(quote.getVenue(),
-                                    quote.getSymbol());
+                            final Stocks.Stock stock = Stocks.getStock(quote
+                                    .getVenue(), quote.getSymbol());
                             final ZonedDateTime currentQuoteTime =
                                     quote.getQuoteTime();
                             if (stockZonedDateTimeMap.containsKey(stock)) {
@@ -159,7 +159,7 @@ public class QuoteReceiver implements Closeable {
             });
         }
 
-        private void setQuote(final Stock stock,
+        private void setQuote(final Stocks.Stock stock,
                               final ZonedDateTime currentQuoteTime,
                               final Quote quote) {
             stockZonedDateTimeMap.put(stock, currentQuoteTime);

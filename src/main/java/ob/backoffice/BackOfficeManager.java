@@ -1,10 +1,10 @@
 package ob.backoffice;
 
 import ob.abstractions.QuoteStatistics;
-import ob.backoffice.abstractions.Account;
+import ob.backoffice.abstractions.Accounts;
 import ob.backoffice.abstractions.OrderStatusContainer;
 import ob.backoffice.abstractions.PositionSnapshot;
-import ob.backoffice.abstractions.Stock;
+import ob.backoffice.abstractions.Stocks;
 import ob.backoffice.websocket.ExecutionReceiver;
 import ob.backoffice.websocket.QuoteReceiver;
 import ob.backoffice.websocket.abstractions.Execution;
@@ -37,11 +37,11 @@ public class BackOfficeManager implements Closeable {
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final Bookkeeper bookkeeper;
     private final ExecutorService quoteReceiverPool;
-    private final Map<Stock, QuoteStatistics> quoteStatisticsMap =
+    private final Map<Stocks.Stock, QuoteStatistics> quoteStatisticsMap =
             new ConcurrentHashMap<>();
 
-    public BackOfficeManager(final List<Account> accounts,
-                             final List<Stock> stocks,
+    public BackOfficeManager(final List<Accounts.Account> accounts,
+                             final List<Stocks.Stock> stocks,
                              final int startingCash,
                              final boolean useExecutionReceiver,
                              final boolean expireOrders,
@@ -78,7 +78,7 @@ public class BackOfficeManager implements Closeable {
         }
         this.bookkeeper = new Bookkeeper(executionBlockingQueue, numThreads,
                 expireOrders, accounts, stocks, startingCash);
-        for (final Stock stock : stocks) {
+        for (final Stocks.Stock stock : stocks) {
             quoteStatisticsMap.put(stock, new QuoteStatistics());
         }
     }
@@ -108,7 +108,7 @@ public class BackOfficeManager implements Closeable {
         bookkeeper.logStatus(quoteStatisticsMap);
     }
 
-    public Map<Stock, QuoteStatistics> getQuoteStatisticsMap() {
+    public Map<Stocks.Stock, QuoteStatistics> getQuoteStatisticsMap() {
         return quoteStatisticsMap;
     }
 
@@ -119,7 +119,7 @@ public class BackOfficeManager implements Closeable {
                 newOrderResponse, orderStatusContainer);
     }
 
-    public PositionSnapshot getPositionSnapshot(final Stock stock,
+    public PositionSnapshot getPositionSnapshot(final Stocks.Stock stock,
                                                 final String account) {
         return bookkeeper.getPositionSnapshot(stock, account);
     }
@@ -147,9 +147,9 @@ public class BackOfficeManager implements Closeable {
 
     private Callable<Boolean> retrieveQuote(final QuoteReceiver quoteReceiver) {
         return () -> {
-            for (final Map.Entry<Stock, Quote> stockQuoteEntry :
+            for (final Map.Entry<Stocks.Stock, Quote> stockQuoteEntry :
                     quoteReceiver.getStockQuoteMap().entrySet()) {
-                final Stock stock = stockQuoteEntry.getKey();
+                final Stocks.Stock stock = stockQuoteEntry.getKey();
                 final Quote quote = stockQuoteEntry.getValue();
                 final QuoteStatistics quoteStatistics;
                 if (quoteStatisticsMap.containsKey(stock)) {

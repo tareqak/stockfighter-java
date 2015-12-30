@@ -122,7 +122,16 @@ public class LevelManager implements Closeable {
                                 levelHeartbeatRequest.getResponse();
                 final Details details = levelHeartbeatResponse.getDetails();
                 if (details != null) {
-                    logger.info("Day {}", details.getTradingDay());
+                    final Integer tradingDay = details.getTradingDay();
+                    final Integer endOfTheWorldDay =
+                            details.getEndOfTheWorldDay();
+                    logger.info("Day {}", tradingDay);
+                    if (tradingDay.equals(endOfTheWorldDay)) {
+                        logger.info("Reached end of the world: {}.",
+                                endOfTheWorldDay);
+                        done.set(true);
+                        break;
+                    }
                 }
                 logger.debug(levelHeartbeatResponse.toString());
                 final Flash flash = levelHeartbeatResponse.getFlash();

@@ -27,7 +27,7 @@ public class Bookkeeper implements Closeable {
             LoggerFactory.getLogger(Bookkeeper.class);
 
     private final BlockingQueue<Execution> executionBlockingQueue;
-    private final Map<Stock, Map<String, PositionStatus>>
+    private final Map<Stocks.Stock, Map<String, PositionStatus>>
             stockAccountPositionMap = new HashMap<>(10);
     private final Cache<Integer, OrderStatus> orderStatusCache;
 
@@ -38,7 +38,8 @@ public class Bookkeeper implements Closeable {
 
     public Bookkeeper(final BlockingQueue<Execution> executionBlockingQueue,
                       final int numThreads, final boolean expireOrders,
-                      final List<Account> accounts, final List<Stock> stocks,
+                      final List<Accounts.Account> accounts,
+                      final List<Stocks.Stock> stocks,
                       final int startingCash) {
         this.executionBlockingQueue = executionBlockingQueue;
         if (expireOrders) {
@@ -48,8 +49,8 @@ public class Bookkeeper implements Closeable {
             orderStatusCache = CacheBuilder.newBuilder().initialCapacity(10)
                     .build();
         }
-        for (final Stock stock : stocks) {
-            for (final Account account : accounts) {
+        for (final Stocks.Stock stock : stocks) {
+            for (final Accounts.Account account : accounts) {
                 if (stock.getVenue().equals(account.getVenue())) {
                     final PositionStatus positionStatus = new PositionStatus();
                     if (stockAccountPositionMap.containsKey(stock)) {
@@ -88,19 +89,19 @@ public class Bookkeeper implements Closeable {
         }
     }
 
-    public void logStatus(final Map<Stock, QuoteStatistics>
+    public void logStatus(final Map<Stocks.Stock, QuoteStatistics>
                                   quoteStatisticsMap) {
         Integer netAssetValue = 0;
         boolean first = true;
         final StringBuilder stringBuilder = new StringBuilder();
-        for (Map.Entry<Stock, Map<String, PositionStatus>> entry :
+        for (Map.Entry<Stocks.Stock, Map<String, PositionStatus>> entry :
                 stockAccountPositionMap.entrySet()) {
             if (first) {
                 first = false;
             } else {
                 stringBuilder.append(' ');
             }
-            final Stock stock = entry.getKey();
+            final Stocks.Stock stock = entry.getKey();
             stringBuilder.append(stock).append(' ');
             final Map<String, PositionStatus> accountPositionMap =
                     entry.getValue();
@@ -152,7 +153,7 @@ public class Bookkeeper implements Closeable {
         }
     }
 
-    public PositionSnapshot getPositionSnapshot(final Stock stock,
+    public PositionSnapshot getPositionSnapshot(final Stocks.Stock stock,
                                                 final String account) {
         return getPositionStatus(stock, account).getPositionSnapshot();
     }
@@ -179,7 +180,7 @@ public class Bookkeeper implements Closeable {
         if (orderType == OrderType.LIMIT || orderType == OrderType.MARKET) {
             return;
         }
-        final Stock stock = orderStatus.getStock();
+        final Stocks.Stock stock = orderStatus.getStock();
         final String account = orderStatus.getAccount();
         final PositionStatus positionStatus = getPositionStatus(stock, account);
         final Direction direction = order.getDirection();
@@ -217,7 +218,7 @@ public class Bookkeeper implements Closeable {
         }
     }
 
-    private PositionStatus getPositionStatus(final Stock stock,
+    private PositionStatus getPositionStatus(final Stocks.Stock stock,
                                              final String account) {
         final PositionStatus positionStatus;
         if (stockAccountPositionMap.containsKey(stock)) {
@@ -294,7 +295,7 @@ public class Bookkeeper implements Closeable {
                     while (true) {
                         try {
                             orderStatus = orderStatusCache.get(orderId, () ->
-                                    new OrderStatus(new Stock(orderVenue,
+                                    new OrderStatus(Stocks.getStock(orderVenue,
                                             orderSymbol), orderAccount,
                                             direction, order.getOrderType(),
                                             order.getPrice(),
@@ -314,7 +315,7 @@ public class Bookkeeper implements Closeable {
                         continue;
                     }
                     ZonedDateTime lastFilled = orderStatus.getLastFilled();
-                    final Stock stock = new Stock(executionVenue,
+                    final Stocks.Stock stock = Stocks.getStock(executionVenue,
                             executionSymbol);
                     for (Fill fill : fills) {
                         ZonedDateTime ts = fill.getTimestamp();
