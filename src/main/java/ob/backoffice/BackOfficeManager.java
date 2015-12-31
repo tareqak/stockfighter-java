@@ -3,7 +3,6 @@ package ob.backoffice;
 import ob.abstractions.QuoteStatistics;
 import ob.backoffice.abstractions.Accounts;
 import ob.backoffice.abstractions.OrderStatusContainer;
-import ob.backoffice.abstractions.PositionSnapshot;
 import ob.backoffice.abstractions.Stocks;
 import ob.backoffice.websocket.ExecutionReceiver;
 import ob.backoffice.websocket.QuoteReceiver;
@@ -20,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class BackOfficeManager implements Closeable {
@@ -37,8 +37,7 @@ public class BackOfficeManager implements Closeable {
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final Bookkeeper bookkeeper;
     private final ExecutorService quoteReceiverPool;
-    private final Map<Stocks.Stock, QuoteStatistics> quoteStatisticsMap =
-            new ConcurrentHashMap<>();
+    private final Map<Stocks.Stock, QuoteStatistics> quoteStatisticsMap;
 
     public BackOfficeManager(final List<Accounts.Account> accounts,
                              final List<Stocks.Stock> stocks,
@@ -52,24 +51,20 @@ public class BackOfficeManager implements Closeable {
         if (useExecutionReceiver) {
             numThreads = BOOKKEEPER_WORKERS_PER_ACCOUNT * numAccounts;
             executionBlockingQueue = new LinkedBlockingQueue<>();
-            this.executionReceivers = new ArrayList<>(numAccounts);
-            this.executionReceivers.addAll(accounts.stream().map(
+            this.executionReceivers = accounts.parallelStream().map(
                     account -> new ExecutionReceiver(executionBlockingQueue,
                             account.getId(), account.getVenue()))
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList());
         } else {
             numThreads = 0;
             executionBlockingQueue = null;
             this.executionReceivers = null;
         }
         if (useQuoteReceiver) {
-            this.quoteReceivers = new ArrayList<>(numAccounts);
-            this.quoteReceivers.addAll(accounts.stream().map(
-                    account -> new QuoteReceiver(account.getId(),
-                            account.getVenue()))
-                    .collect(Collectors.toList()));
-            this.quoteReceiverPool =
-                    Executors.newFixedThreadPool(numAccounts);
+            this.quoteReceivers = accounts.parallelStream().map(account ->
+                    new QuoteReceiver(account.getId(), account.getVenue()))
+                    .collect(Collectors.toList());
+            this.quoteReceiverPool = Executors.newFixedThreadPool(numAccounts);
             this.futures = new ArrayList<>(numAccounts);
         } else {
             this.quoteReceivers = null;
@@ -77,29 +72,25 @@ public class BackOfficeManager implements Closeable {
             this.futures = null;
         }
         this.bookkeeper = new Bookkeeper(executionBlockingQueue, numThreads,
-                expireOrders, accounts, stocks, startingCash);
-        for (final Stocks.Stock stock : stocks) {
-            quoteStatisticsMap.put(stock, new QuoteStatistics());
-        }
+                expireOrders, startingCash, accounts, stocks);
+        quoteStatisticsMap = stocks.parallelStream().collect(
+                Collectors.toConcurrentMap(Function.identity(),
+                        stock -> new QuoteStatistics()));
     }
 
     public void gatherStatistics() {
         if (quoteReceivers != null) {
-            for (final QuoteReceiver quoteReceiver : quoteReceivers) {
-                futures.add(
-                        quoteReceiverPool.submit(retrieveQuote(quoteReceiver)));
-            }
-            for (final Future<Boolean> future : futures) {
-                if (future == null) {
-                    logger.warn("Null future.");
-                } else {
-                    try {
-                        future.get();
-                    } catch (Exception e) {
-                        logger.error("Error getting future.", e);
-                    }
-                }
-            }
+            quoteReceivers.parallelStream().forEach(quoteReceiver ->
+                    futures.add(quoteReceiverPool.submit(
+                            retrieveQuote(quoteReceiver))));
+            futures.parallelStream().filter(f -> f != null)
+                    .forEach(f -> {
+                        try {
+                            f.get();
+                        } catch (Exception e) {
+                            logger.error("Error getting future.", e);
+                        }
+                    });
             futures.clear();
         }
     }
@@ -119,9 +110,9 @@ public class BackOfficeManager implements Closeable {
                 newOrderResponse, orderStatusContainer);
     }
 
-    public PositionSnapshot getPositionSnapshot(final Stocks.Stock stock,
-                                                final String account) {
-        return bookkeeper.getPositionSnapshot(stock, account);
+    public Bookkeeper.PositionStatus.PositionSnapshot getPositionSnapshot(
+            final Stocks.Stock stock, final Accounts.Account account) {
+        return bookkeeper.getPositionSnapshot(account, stock);
     }
 
     public void invalidateOrder(final int id) {
@@ -147,21 +138,15 @@ public class BackOfficeManager implements Closeable {
 
     private Callable<Boolean> retrieveQuote(final QuoteReceiver quoteReceiver) {
         return () -> {
-            for (final Map.Entry<Stocks.Stock, Quote> stockQuoteEntry :
-                    quoteReceiver.getStockQuoteMap().entrySet()) {
-                final Stocks.Stock stock = stockQuoteEntry.getKey();
-                final Quote quote = stockQuoteEntry.getValue();
-                final QuoteStatistics quoteStatistics;
-                if (quoteStatisticsMap.containsKey(stock)) {
-                    quoteStatistics = quoteStatisticsMap.get(stock);
-                } else {
-                    quoteStatistics = new QuoteStatistics();
-                    quoteStatisticsMap.put(stock, quoteStatistics);
-                }
-                if (quoteStatistics.processQuote(quote)) {
-                    logger.debug("Quote: {}", quote);
-                }
-            }
+            quoteReceiver.getStockQuoteMap().entrySet().parallelStream()
+                    .forEach(entry -> {
+                        final Quote quote = entry.getValue();
+                        final QuoteStatistics quoteStatistics =
+                                quoteStatisticsMap.get(entry.getKey());
+                        if (quoteStatistics.processQuote(quote)) {
+                            logger.debug("Quote: {}", quote);
+                        }
+                    });
             return true;
         };
     }

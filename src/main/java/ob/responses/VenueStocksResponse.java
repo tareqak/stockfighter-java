@@ -6,6 +6,7 @@ import http.StockfighterHttpResponse;
 import ob.abstractions.StockSymbol;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class VenueStocksResponse extends StockfighterHttpResponse {
     private final List<StockSymbol> symbols;
@@ -22,16 +23,9 @@ public class VenueStocksResponse extends StockfighterHttpResponse {
     public String toString() {
         if (ok) {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("\nStockSymbol Listing\n");
-            boolean first = true;
-            for (StockSymbol stockSymbol : symbols) {
-                if (first) {
-                    first = false;
-                } else {
-                    stringBuilder.append('\n');
-                }
-                stringBuilder.append("> ").append(stockSymbol.toString());
-            }
+            stringBuilder.append("StockSymbol Listing\n");
+            stringBuilder.append(symbols.stream().map(StockSymbol::toString)
+                    .collect(Collectors.joining("\n")));
             return stringBuilder.toString();
         } else {
             return "Venue stocks response not OK.";

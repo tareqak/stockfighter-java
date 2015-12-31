@@ -1,7 +1,7 @@
 package ob.backoffice.abstractions;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +9,7 @@ public enum Stocks {
     INSTANCE;
 
     private final Map<String, Map<String, Stock>> stocks = new HashMap<>();
+    private final List<Stock> stockList = new LinkedList<>();
 
     public static Stock getStock(final String venue, final String symbol) {
         if (INSTANCE.stocks.containsKey(venue)) {
@@ -18,6 +19,7 @@ public enum Stocks {
             } else {
                 final Stock stock = new Stock(venue, symbol);
                 stockMap.put(symbol, stock);
+                INSTANCE.stockList.add(stock);
                 return stock;
             }
         } else {
@@ -25,16 +27,13 @@ public enum Stocks {
             final Map<String, Stock> stockMap = new HashMap<>();
             stockMap.put(symbol, stock);
             INSTANCE.stocks.put(venue, stockMap);
+            INSTANCE.stockList.add(stock);
             return stock;
         }
     }
 
     public static List<Stock> getStocks() {
-        final List<Stock> stockList = new ArrayList<>();
-        for (final Map<String, Stock> stockMap : INSTANCE.stocks.values()) {
-            stockList.addAll(stockMap.values());
-        }
-        return stockList;
+        return INSTANCE.stockList;
     }
 
     public static class Stock {

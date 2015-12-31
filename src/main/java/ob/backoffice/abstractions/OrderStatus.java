@@ -7,7 +7,7 @@ import java.time.ZonedDateTime;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class OrderStatus {
-    private final String account;
+    private final Accounts.Account account;
     private final Stocks.Stock stock;
     private final Direction direction;
     private final OrderType orderType;
@@ -21,21 +21,7 @@ public class OrderStatus {
     private Integer id = null;
 
     public OrderStatus(final Stocks.Stock stock,
-                       final String account,
-                       final String direction,
-                       final String orderType,
-                       final Integer price,
-                       final Integer quantity) {
-        this.stock = stock;
-        this.account = account;
-        this.direction = Direction.getDirection(direction);
-        this.orderType = OrderType.getOrderType(orderType);
-        this.price = price;
-        this.quantity = quantity;
-    }
-
-    public OrderStatus(final Stocks.Stock stock,
-                       final String account,
+                       final Accounts.Account account,
                        final Direction direction,
                        final OrderType orderType,
                        final Integer price,
@@ -48,31 +34,20 @@ public class OrderStatus {
         this.quantity = quantity;
     }
 
-    public void update(final Integer filled, final Integer sharePriceValue) {
+    public void update(final Integer filled, final Integer sharePriceValue,
+                       final ZonedDateTime lastFilled) {
         reentrantReadWriteLock.writeLock().lock();
         totalFilled += filled;
         this.sharePriceValue += sharePriceValue;
+        this.lastFilled = lastFilled;
         reentrantReadWriteLock.writeLock().unlock();
-    }
-
-    public OrderSnapshot getOrderSnapshot() {
-        try {
-            reentrantReadWriteLock.readLock().lock();
-            return new OrderSnapshot(totalFilled, sharePriceValue);
-        } finally {
-            reentrantReadWriteLock.readLock().unlock();
-        }
     }
 
     public ZonedDateTime getLastFilled() {
         return lastFilled;
     }
 
-    public void setLastFilled(final ZonedDateTime lastFilled) {
-        this.lastFilled = lastFilled;
-    }
-
-    public String getAccount() {
+    public Accounts.Account getAccount() {
         return account;
     }
 

@@ -10,7 +10,7 @@ public class Details {
 
     @JsonCreator
     public Details(@JsonProperty("endOfTheWorldDay")
-                       final Integer endOfTheWorldDay,
+                   final Integer endOfTheWorldDay,
                    @JsonProperty("tradingDay") final Integer tradingDay) {
         this.endOfTheWorldDay = endOfTheWorldDay;
         this.tradingDay = tradingDay;

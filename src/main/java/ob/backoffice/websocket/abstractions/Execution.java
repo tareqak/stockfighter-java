@@ -3,14 +3,15 @@ package ob.backoffice.websocket.abstractions;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import ob.abstractions.Order;
+import ob.backoffice.abstractions.Accounts;
+import ob.backoffice.abstractions.Stocks;
 
 import java.time.ZonedDateTime;
 
 public class Execution {
     private final Boolean ok;
-    private final String account;
-    private final String venue;
-    private final String symbol;
+    private final Accounts.Account account;
+    private final Stocks.Stock stock;
     private final Order order;
     private final Integer standingId;
     private final Integer incomingId;
@@ -22,7 +23,7 @@ public class Execution {
 
     @JsonCreator
     public Execution(@JsonProperty("ok") Boolean ok,
-                     @JsonProperty("account") String account,
+                     @JsonProperty("account") String accountId,
                      @JsonProperty("venue") String venue,
                      @JsonProperty("symbol") String symbol,
                      @JsonProperty("order") Order order,
@@ -34,9 +35,8 @@ public class Execution {
                      @JsonProperty("standingComplete") Boolean standingComplete,
                      @JsonProperty("incomingComplete") Boolean incomingComplete) {
         this.ok = ok;
-        this.account = account;
-        this.venue = venue;
-        this.symbol = symbol;
+        this.account = Accounts.getAccount(venue, accountId);
+        this.stock = Stocks.getStock(venue, symbol);
         this.order = order;
         this.standingId = standingId;
         this.incomingId = incomingId;
@@ -51,16 +51,12 @@ public class Execution {
         return ok;
     }
 
-    public String getAccount() {
+    public Accounts.Account getAccount() {
         return account;
     }
 
-    public String getVenue() {
-        return venue;
-    }
-
-    public String getSymbol() {
-        return symbol;
+    public Stocks.Stock getStock() {
+        return stock;
     }
 
     public Order getOrder() {
@@ -99,9 +95,8 @@ public class Execution {
     public String toString() {
         return "Execution{" +
                 "ok=" + ok +
-                ", account=\"" + account + '\"' +
-                ", venue=\"" + venue + '\"' +
-                ", symbol=\"" + symbol + '\"' +
+                ", account=\"" + account.getId() + '\"' +
+                ", stock=" + stock +
                 ", order=" + order +
                 ", standingId=" + standingId +
                 ", incomingId=" + incomingId +

@@ -7,6 +7,7 @@ import ob.abstractions.StockRequest;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrderbookResponse extends StockfighterHttpResponse {
     private final String venue;
@@ -35,32 +36,18 @@ public class OrderbookResponse extends StockfighterHttpResponse {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\nOrderbook :: ").append(venue)
+        stringBuilder.append("Orderbook :: ").append(venue)
                 .append(":").append(symbol)
                 .append(" @ ").append(timestamp.toString());
         if (bids != null) {
             stringBuilder.append("\nBids:\n");
-            boolean first = true;
-            for (StockRequest stockRequest : bids) {
-                if (first) {
-                    first = false;
-                } else {
-                    stringBuilder.append('\n');
-                }
-                stringBuilder.append("> ").append(stockRequest.toString());
-            }
+            stringBuilder.append(bids.stream().map(StockRequest::toString)
+                    .collect(Collectors.joining("\n")));
         }
         if (asks != null) {
             stringBuilder.append("\nAsks:\n");
-            boolean first = true;
-            for (StockRequest stockRequest : asks) {
-                if (first) {
-                    first = false;
-                } else {
-                    stringBuilder.append('\n');
-                }
-                stringBuilder.append("> ").append(stockRequest.toString());
-            }
+            stringBuilder.append(asks.stream().map(StockRequest::toString)
+                    .collect(Collectors.joining("\n")));
         }
         return stringBuilder.toString();
     }

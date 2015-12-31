@@ -6,6 +6,7 @@ import http.StockfighterHttpResponse;
 import ob.abstractions.Order;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AllOrdersResponse extends StockfighterHttpResponse {
     List<Order> orders;
@@ -24,18 +25,11 @@ public class AllOrdersResponse extends StockfighterHttpResponse {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\nAll Orders Response:\nvenue: ").append(venue);
+        stringBuilder.append("All Orders Response:\nvenue: ").append(venue);
         if (orders.size() > 0) {
             stringBuilder.append("\nOrders:\n");
-            boolean first = true;
-            for (final Order order : orders) {
-                if (first) {
-                    first = false;
-                } else {
-                    stringBuilder.append("\n");
-                }
-                stringBuilder.append(order);
-            }
+            stringBuilder.append(orders.stream().map(Order::toString)
+                    .collect(Collectors.joining("\n")));
         }
         return stringBuilder.toString();
     }

@@ -15,11 +15,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public abstract class StockfighterHttpRequest {
     private static final String apiKey;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    // TODO: This is bad design but keeps the code cleaner
     private static CloseableHttpClient httpClient;
 
     static {
@@ -44,11 +46,11 @@ public abstract class StockfighterHttpRequest {
     }
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    private HttpRequestType httpRequestType;
-    private BaseUrl baseUrl;
-    private String path;
-    private Map<String, Object> parameters;
-    private boolean requiresAuthorization;
+    private final HttpRequestType httpRequestType;
+    private final BaseUrl baseUrl;
+    private final String path;
+    private final Map<String, Object> parameters;
+    private final boolean requiresAuthorization;
 
     public StockfighterHttpRequest(final HttpRequestType httpRequestType,
                                    final BaseUrl baseUrl, final String path,
@@ -77,39 +79,37 @@ public abstract class StockfighterHttpRequest {
             logger.error("HTTP client is null.");
             return null; // TODO: better idea?
         }
-        HttpRequestBase httpRequestBase;
-        String url = baseUrl.url + path;
+        final HttpRequestBase httpRequestBase;
+        final String url = baseUrl.url + path;
         switch (httpRequestType) {
             case GET:
                 httpRequestBase = new HttpGet(url);
                 break;
             case POST:
-                HttpPost httpPost = new HttpPost(url);
+                final HttpPost httpPost = new HttpPost(url);
 
                 // Construct JSON POST body
                 if (!parameters.isEmpty()) {
-                    StringBuilder stringBuilder = new StringBuilder();
+                    final StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append('{');
-                    boolean first = true;
-                    for (Map.Entry<String, Object> keyValuePair :
-                            parameters.entrySet()) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            stringBuilder.append(',');
-                        }
-                        stringBuilder.append('"').append(keyValuePair.getKey())
-                                .append("\":");
-                        Object value = keyValuePair.getValue();
-                        if (value instanceof Integer) {
-                            stringBuilder.append(value);
-                        } else {
-                            stringBuilder.append('"').append(value).append('"');
-                        }
-                    }
-                    stringBuilder.append('}');
+                    final String collect = parameters.entrySet()
+                            .parallelStream().map(entry -> {
+                                final StringBuilder builder =
+                                        new StringBuilder();
+                                builder.append('"').append(entry.getKey())
+                                        .append("\":");
+                                Object value = entry.getValue();
+                                if (value instanceof Integer) {
+                                    builder.append(value);
+                                } else {
+                                    builder.append('"').append(value)
+                                            .append('"');
+                                }
+                                return builder.toString();
+                            }).collect(Collectors.joining(","));
+                    stringBuilder.append(collect).append('}');
                     try {
-                        StringEntity postBody =
+                        final StringEntity postBody =
                                 new StringEntity(stringBuilder.toString());
                         postBody.setContentType("application/json");
                         httpPost.setEntity(postBody);
@@ -131,10 +131,10 @@ public abstract class StockfighterHttpRequest {
             httpRequestBase.addHeader("X-Starfighter-Authorization", apiKey);
             logger.debug("Adding API key");
         }
-        try (CloseableHttpResponse response =
+        try (final CloseableHttpResponse response =
                      httpClient.execute(httpRequestBase)) {
-            StatusLine statusLine = response.getStatusLine();
-            int statusCode = statusLine.getStatusCode();
+            final StatusLine statusLine = response.getStatusLine();
+            final int statusCode = statusLine.getStatusCode();
             if (statusCode >= 300) {
                 logger.error("{}: {}", statusCode,
                         statusLine.getReasonPhrase());
@@ -145,7 +145,7 @@ public abstract class StockfighterHttpRequest {
                 logger.warn("status  code: {}", statusCode);
             }
 
-            HttpEntity entity = response.getEntity();
+            final HttpEntity entity = response.getEntity();
             if (entity != null) {
                 return objectMapper.readValue(entity.getContent(),
                         getResponseClass());
@@ -167,9 +167,9 @@ public abstract class StockfighterHttpRequest {
         API("https://api.stockfighter.io/ob/api/"),
         GM("https://www.stockfighter.io/gm/");
 
-        private String url;
+        private final String url;
 
-        BaseUrl(String url) {
+        BaseUrl(final String url) {
             this.url = url;
         }
     }
