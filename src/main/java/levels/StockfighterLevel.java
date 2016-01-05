@@ -34,6 +34,10 @@ public abstract class StockfighterLevel {
         }
     }
 
+    public String getName() {
+        return name;
+    }
+
     protected void sleep(long milliseconds) {
         try {
             Thread.sleep(milliseconds);
