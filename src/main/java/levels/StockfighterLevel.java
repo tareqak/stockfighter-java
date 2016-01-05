@@ -1,6 +1,6 @@
 package levels;
 
-import http.StockfighterHttpRequest;
+import gm.LevelManager;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -17,16 +17,18 @@ public abstract class StockfighterLevel {
         this.name = name;
     }
 
-    protected abstract void actuallyPlay();
+    protected abstract void actuallyPlay(final CloseableHttpClient httpClient,
+                                         final LevelManager levelManager);
 
     public void play() {
         final PoolingHttpClientConnectionManager connectionManager =
                 new PoolingHttpClientConnectionManager();
         connectionManager.setMaxTotal(10);
         try (final CloseableHttpClient httpClient = HttpClients.custom()
-                .setConnectionManager(connectionManager).build()) {
-            StockfighterHttpRequest.setHttpClient(httpClient);
-            actuallyPlay();
+                .setConnectionManager(connectionManager).build();
+             final LevelManager levelManager =
+                     new LevelManager(httpClient, name)) {
+            actuallyPlay(httpClient, levelManager);
         } catch (IOException e) {
             logger.error("Error.", e);
         }

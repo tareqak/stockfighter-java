@@ -7,6 +7,7 @@ import gm.responses.LevelHeartbeatResponse;
 import gm.responses.LevelResponse;
 import gm.responses.abstractions.Details;
 import gm.responses.abstractions.Flash;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utilities.Utilities;
@@ -27,12 +28,16 @@ public class LevelManager implements Closeable {
             new ReentrantReadWriteLock();
     private final Thread levelHeartbeatCheckerThread;
     private final AtomicBoolean done = new AtomicBoolean(false);
+    private final CloseableHttpClient httpClient;
     private Flash flash = null;
 
-    public LevelManager(final String levelName) {
+    public LevelManager(final CloseableHttpClient httpClient,
+                        final String levelName) {
         this.levelName = levelName;
+        this.httpClient = httpClient;
         levelHeartbeatCheckerThread = new Thread(new LevelHeartbeatChecker());
-        StartLevelRequest startLevelRequest = new StartLevelRequest(levelName);
+        StartLevelRequest startLevelRequest =
+                new StartLevelRequest(httpClient, levelName);
         boolean first = true;
         while (true) {
             LevelResponse levelResponse = (LevelResponse)
@@ -57,7 +62,8 @@ public class LevelManager implements Closeable {
                 if (first) {
                     logger.debug("Abandoning first instance for a fresh start");
                     StopLevelRequest stopLevelRequest =
-                            new StopLevelRequest(levelResponse.getInstanceId());
+                            new StopLevelRequest(httpClient,
+                                    levelResponse.getInstanceId());
                     logger.debug(stopLevelRequest.getResponse().toString());
                     first = false;
                 } else {
@@ -98,7 +104,8 @@ public class LevelManager implements Closeable {
             logger.error("Error stopping levelHeartbeatCheckerThread.", e);
         }
         logger.info("Stopping \"{}\".", levelName);
-        StopLevelRequest stopLevelRequest = new StopLevelRequest(instanceId);
+        StopLevelRequest stopLevelRequest =
+                new StopLevelRequest(httpClient, instanceId);
         logger.info(stopLevelRequest.getResponse().toString());
     }
 
@@ -114,7 +121,7 @@ public class LevelManager implements Closeable {
         @Override
         public void run() {
             LevelHeartbeatRequest levelHeartbeatRequest =
-                    new LevelHeartbeatRequest(instanceId);
+                    new LevelHeartbeatRequest(httpClient, instanceId);
             Flash previousFlash = null;
             while (true) {
                 LevelHeartbeatResponse levelHeartbeatResponse =

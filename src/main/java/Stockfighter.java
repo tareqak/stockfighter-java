@@ -1,7 +1,7 @@
-import levels.TestLevel;
+import levels.TestEx;
 
 public class Stockfighter {
     public static void main(String[] args) {
-        new TestLevel().play();
+        new TestEx().play();
     }
 }

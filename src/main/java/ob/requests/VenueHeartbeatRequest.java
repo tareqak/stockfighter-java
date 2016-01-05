@@ -3,10 +3,12 @@ package ob.requests;
 import http.StockfighterHttpRequest;
 import http.StockfighterHttpResponse;
 import ob.responses.VenueHeartbeatResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 public class VenueHeartbeatRequest extends StockfighterHttpRequest {
-    public VenueHeartbeatRequest(final String venue) {
-        super(HttpRequestType.GET, BaseUrl.API, "venues/" + venue +
+    public VenueHeartbeatRequest(final CloseableHttpClient httpClient,
+                                 final String venue) {
+        super(httpClient, HttpRequestType.GET, BaseUrl.API, "venues/" + venue +
                 "/heartbeat", false);
     }
 

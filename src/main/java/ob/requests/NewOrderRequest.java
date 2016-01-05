@@ -8,16 +8,18 @@ import ob.backoffice.abstractions.Accounts;
 import ob.backoffice.abstractions.OrderStatus;
 import ob.backoffice.abstractions.Stocks;
 import ob.responses.NewOrderResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 public class NewOrderRequest extends StockfighterHttpRequest {
     private final OrderStatus orderStatus;
 
-    public NewOrderRequest(final String venue, final String stock,
+    public NewOrderRequest(final CloseableHttpClient httpClient,
+                           final String venue, final String stock,
                            final String account, final Integer price,
                            final Integer quantity, final Direction direction,
                            final OrderType orderType) {
-        super(HttpRequestType.POST, BaseUrl.API, "venues/" + venue + "/stocks/"
-                + stock + "/orders", true);
+        super(httpClient, HttpRequestType.POST, BaseUrl.API, "venues/" + venue +
+                "/stocks/" + stock + "/orders", true);
         addParameter("account", account);
         addParameter("qty", quantity);
         addParameter("direction", direction.getText());

@@ -3,11 +3,13 @@ package ob.requests;
 import http.StockfighterHttpRequest;
 import http.StockfighterHttpResponse;
 import ob.responses.OrderbookResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 public class OrderbookRequest extends StockfighterHttpRequest {
-    public OrderbookRequest(final String venue, final String stock) {
-        super(HttpRequestType.GET, BaseUrl.API, "venues/" + venue + "/stocks/"
-                + stock, false);
+    public OrderbookRequest(final CloseableHttpClient httpClient,
+                            final String venue, final String stock) {
+        super(httpClient, HttpRequestType.GET, BaseUrl.API, "venues/" + venue +
+                "/stocks/" + stock, false);
     }
 
     @Override

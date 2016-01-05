@@ -3,12 +3,13 @@ package gm.requests;
 import gm.responses.StopLevelResponse;
 import http.StockfighterHttpRequest;
 import http.StockfighterHttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 public class StopLevelRequest extends StockfighterHttpRequest {
-    public StopLevelRequest(final Integer instanceId) {
-        super(StockfighterHttpRequest.HttpRequestType.POST, BaseUrl.GM,
-                "instances/" + instanceId.toString() + "/stop",
-                true);
+    public StopLevelRequest(final CloseableHttpClient httpClient,
+                            final Integer instanceId) {
+        super(httpClient, HttpRequestType.POST, BaseUrl.GM, "instances/" +
+                instanceId + "/stop", true);
     }
 
     @Override

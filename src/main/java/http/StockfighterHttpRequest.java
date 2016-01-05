@@ -21,9 +21,6 @@ public abstract class StockfighterHttpRequest {
     private static final String apiKey;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // TODO: This is bad design but keeps the code cleaner
-    private static CloseableHttpClient httpClient;
-
     static {
         Properties properties = new Properties();
         String propertiesFilename = "config.properties";
@@ -51,20 +48,18 @@ public abstract class StockfighterHttpRequest {
     private final String path;
     private final Map<String, Object> parameters;
     private final boolean requiresAuthorization;
+    private final CloseableHttpClient httpClient;
 
-    public StockfighterHttpRequest(final HttpRequestType httpRequestType,
+    public StockfighterHttpRequest(final CloseableHttpClient httpClient,
+                                   final HttpRequestType httpRequestType,
                                    final BaseUrl baseUrl, final String path,
                                    final boolean requiresAuthorization) {
+        this.httpClient = httpClient;
         this.httpRequestType = httpRequestType;
         this.parameters = new HashMap<>();
         this.baseUrl = baseUrl;
         this.path = path;
         this.requiresAuthorization = requiresAuthorization;
-    }
-
-    // Must call this method prior to using subclasses
-    public static void setHttpClient(final CloseableHttpClient httpClient) {
-        StockfighterHttpRequest.httpClient = httpClient;
     }
 
     protected abstract Class<? extends StockfighterHttpResponse>
