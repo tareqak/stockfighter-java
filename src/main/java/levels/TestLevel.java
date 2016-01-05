@@ -10,6 +10,10 @@ import ob.requests.*;
 import java.util.List;
 
 public class TestLevel extends StockfighterLevel {
+    public TestLevel() {
+        super("test"); // Not really used since TestLevel is not really a level
+    }
+
     @Override
     protected void actuallyPlay() {
         final String accountId = "EXB123456";

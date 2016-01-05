@@ -11,6 +11,11 @@ import java.io.IOException;
 
 public abstract class StockfighterLevel {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final String name;
+
+    public StockfighterLevel(final String name) {
+        this.name = name;
+    }
 
     protected abstract void actuallyPlay();
 

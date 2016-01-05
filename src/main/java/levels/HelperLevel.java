@@ -9,13 +9,16 @@ import ob.backoffice.abstractions.Stocks;
 import java.util.List;
 
 public class HelperLevel extends StockfighterLevel {
+    public HelperLevel(final String name) {
+        super(name);
+    }
+
     @Override
     protected void actuallyPlay() {
         final boolean useExecutionReceiver = true;
         final boolean expireOrders = false;
         final boolean useQuoteReceiver = true;
-        try (LevelManager levelManager =
-                     new LevelManager("first_steps")) {
+        try (LevelManager levelManager = new LevelManager(name)) {
             final LevelResponse levelResponse = levelManager.getLevelResponse();
             final String venue = levelResponse.getVenues().get(0);
             final String accountId = levelResponse.getAccount();
