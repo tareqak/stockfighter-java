@@ -133,6 +133,8 @@ public abstract class StockfighterHttpRequest {
         }
         try (final CloseableHttpResponse response =
                      httpClient.execute(httpRequestBase)) {
+            // Based off of an example from
+            // https://hc.apache.org/httpcomponents-client-ga/examples.html
             final StatusLine statusLine = response.getStatusLine();
             final int statusCode = statusLine.getStatusCode();
             if (statusCode >= 300) {
@@ -151,7 +153,6 @@ public abstract class StockfighterHttpRequest {
                         getResponseClass());
             } else {
                 logger.error("Response entity was null");
-                return null; // TODO: better idea?
             }
         } catch (Exception e) {
             logger.error("Error in HTTP response. ", e);

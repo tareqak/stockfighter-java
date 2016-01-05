@@ -11,7 +11,8 @@ repositories {
     mavenCentral()
 }
 
-// Create a single JAR with all dependencies
+// Create a single JAR with all dependencies. Taken from
+// http://www.mkyong.com/gradle/gradle-create-a-jar-file-with-dependencies/
 task fatJar(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'Stockfighter',
