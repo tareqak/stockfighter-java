@@ -34,24 +34,27 @@ public class BackOfficeManager implements Closeable {
     private final List<Future<Boolean>> futures;
 
     // one
-    private final AtomicBoolean done = new AtomicBoolean(false);
+    private final AtomicBoolean done;
     private final Bookkeeper bookkeeper;
     private final ExecutorService quoteReceiverPool;
     private final Map<Stocks.Stock, QuoteStatistics> quoteStatisticsMap;
 
-    public BackOfficeManager(final List<Accounts.Account> accounts,
-                             final List<Stocks.Stock> stocks,
+    public BackOfficeManager(final AtomicBoolean done,
+                             final Accounts accounts,
+                             final Stocks stocks,
                              final int startingCash,
                              final boolean useExecutionReceiver,
                              final boolean expireOrders,
                              final boolean useQuoteReceiver) {
+        this.done = done;
         final int numThreads;
         final BlockingQueue<Execution> executionBlockingQueue;
-        final int numAccounts = accounts.size();
+        final List<Accounts.Account> accountList = accounts.getAccounts();
+        final int numAccounts = accountList.size();
         if (useExecutionReceiver) {
             numThreads = BOOKKEEPER_WORKERS_PER_ACCOUNT * numAccounts;
             executionBlockingQueue = new LinkedBlockingQueue<>();
-            this.executionReceivers = accounts.parallelStream().map(
+            this.executionReceivers = accountList.parallelStream().map(
                     account -> new ExecutionReceiver(executionBlockingQueue,
                             account.getId(), account.getVenue()))
                     .collect(Collectors.toList());
@@ -61,9 +64,9 @@ public class BackOfficeManager implements Closeable {
             this.executionReceivers = null;
         }
         if (useQuoteReceiver) {
-            this.quoteReceivers = accounts.parallelStream().map(account ->
-                    new QuoteReceiver(account.getId(), account.getVenue()))
-                    .collect(Collectors.toList());
+            this.quoteReceivers = accountList.parallelStream().map(account ->
+                    new QuoteReceiver(account.getId(), account.getVenue(),
+                            stocks)).collect(Collectors.toList());
             this.quoteReceiverPool = Executors.newFixedThreadPool(numAccounts);
             this.futures = new ArrayList<>(numAccounts);
         } else {
@@ -71,9 +74,9 @@ public class BackOfficeManager implements Closeable {
             this.quoteReceiverPool = null;
             this.futures = null;
         }
-        this.bookkeeper = new Bookkeeper(executionBlockingQueue, numThreads,
-                expireOrders, startingCash, accounts, stocks);
-        quoteStatisticsMap = stocks.parallelStream().collect(
+        this.bookkeeper = new Bookkeeper(done, executionBlockingQueue,
+                numThreads, expireOrders, startingCash, accounts, stocks);
+        quoteStatisticsMap = stocks.getStocks().parallelStream().collect(
                 Collectors.toConcurrentMap(Function.identity(),
                         stock -> new QuoteStatistics()));
     }

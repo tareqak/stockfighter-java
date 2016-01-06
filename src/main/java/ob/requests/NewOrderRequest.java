@@ -4,15 +4,10 @@ import http.StockfighterHttpRequest;
 import http.StockfighterHttpResponse;
 import ob.abstractions.Direction;
 import ob.abstractions.OrderType;
-import ob.backoffice.abstractions.Accounts;
-import ob.backoffice.abstractions.OrderStatus;
-import ob.backoffice.abstractions.Stocks;
 import ob.responses.NewOrderResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 public class NewOrderRequest extends StockfighterHttpRequest {
-    private final OrderStatus orderStatus;
-
     public NewOrderRequest(final CloseableHttpClient httpClient,
                            final String venue, final String stock,
                            final String account, final Integer price,
@@ -27,17 +22,10 @@ public class NewOrderRequest extends StockfighterHttpRequest {
         if (orderType != OrderType.MARKET) {
             addParameter("price", price);
         }
-        this.orderStatus = new OrderStatus(Stocks.getStock(venue, stock),
-                Accounts.getAccount(venue, account), direction, orderType,
-                price, quantity);
     }
 
     @Override
     protected Class<? extends StockfighterHttpResponse> getResponseClass() {
         return NewOrderResponse.class;
-    }
-
-    public OrderStatus getOrderStatus() {
-        return orderStatus;
     }
 }

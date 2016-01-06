@@ -14,10 +14,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestEx {
     private static final Logger logger = LoggerFactory.getLogger(TestEx.class);
+    protected final Accounts accounts = new Accounts();
+    protected final Stocks stocks = new Stocks();
+    private final AtomicBoolean done;
+
+    public TestEx(final AtomicBoolean done) {
+        this.done = done;
+    }
 
     private static void logResponse(final StockfighterHttpResponse response) {
         if (response != null) {
@@ -38,13 +45,11 @@ public class TestEx {
             final boolean useExecutionReceiver = true;
             final boolean expireOrders = true;
 
-            Stocks.getStock(venue, symbol);
-            Accounts.getAccount(venue, accountId);
-            final List<Stocks.Stock> stocks = Stocks.getStocks();
-            final List<Accounts.Account> accounts = Accounts.getAccounts();
+            stocks.getStock(venue, symbol);
+            accounts.getAccount(venue, accountId);
 
             try (final BackOfficeManager backOfficeManager =
-                         new BackOfficeManager(accounts, stocks, 0,
+                         new BackOfficeManager(done, accounts, stocks, 0,
                                  useExecutionReceiver, expireOrders,
                                  useQuoteReceiver)) {
                 final ApiHeartbeatRequest apiHeartbeatRequest =

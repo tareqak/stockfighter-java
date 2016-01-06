@@ -17,7 +17,7 @@ public class ExecutionReceiver implements Closeable {
     private static final Logger logger =
             LoggerFactory.getLogger(ExecutionReceiver.class);
     private static final String baseUrl =
-            "wss://www.stockfighter.io/ob/api/ws/";
+            "wss://api.stockfighter.io/ob/api/ws/";
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final String url;

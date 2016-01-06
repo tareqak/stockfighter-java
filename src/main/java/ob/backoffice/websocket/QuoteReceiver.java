@@ -22,7 +22,7 @@ public class QuoteReceiver implements Closeable {
     private static final Logger logger =
             LoggerFactory.getLogger(QuoteReceiver.class);
     private static final String baseUrl =
-            "wss://www.stockfighter.io/ob/api/ws/";
+            "wss://api.stockfighter.io/ob/api/ws/";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final String url;
     private final WebSocketContainer webSocketContainer =
@@ -30,17 +30,21 @@ public class QuoteReceiver implements Closeable {
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final Map<Stocks.Stock, Quote> stockQuoteMap =
             new ConcurrentHashMap<>(10);
+    private final Stocks stocks;
     private Session session;
 
-    public QuoteReceiver(final String account, final String venue) {
+    public QuoteReceiver(final String account, final String venue,
+                         final Stocks stocks) {
         url = baseUrl + account + "/venues/" + venue + "/tickertape";
+        this.stocks = stocks;
         connect();
     }
 
     public QuoteReceiver(final String account, final String venue,
-                         final String stock) {
+                         final String stock, final Stocks stocks) {
         url = baseUrl + account + "/venues/" + venue + "/tickertape/stocks/"
                 + stock;
+        this.stocks = stocks;
         connect();
     }
 
@@ -131,7 +135,7 @@ public class QuoteReceiver implements Closeable {
                                 (message, TickerTape.class);
                         if (tickerTape != null) {
                             final Quote quote = tickerTape.getQuote();
-                            final Stocks.Stock stock = Stocks.getStock(quote
+                            final Stocks.Stock stock = stocks.getStock(quote
                                     .getVenue(), quote.getSymbol());
                             final ZonedDateTime currentQuoteTime =
                                     quote.getQuoteTime();

@@ -3,20 +3,18 @@ package levels;
 import gm.LevelManager;
 import gm.responses.LevelResponse;
 import ob.backoffice.BackOfficeManager;
-import ob.backoffice.abstractions.Accounts;
-import ob.backoffice.abstractions.Stocks;
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HelperLevel extends StockfighterLevel {
-    public HelperLevel(final String name) {
-        super(name);
+    public HelperLevel(final String name, final AtomicBoolean done) {
+        super(name, done);
     }
 
     @Override
-    protected void actuallyPlay(final CloseableHttpClient httpClient,
-                                final LevelManager levelManager) {
+    protected void play(final CloseableHttpClient httpClient,
+                        final LevelManager levelManager) {
         final boolean useExecutionReceiver = true;
         final boolean expireOrders = false;
         final boolean useQuoteReceiver = true;
@@ -24,13 +22,11 @@ public class HelperLevel extends StockfighterLevel {
         final String venue = levelResponse.getVenues().get(0);
         final String accountId = levelResponse.getAccount();
         final String symbol = levelResponse.getTickers().get(0);
-        final Stocks.Stock stock = Stocks.getStock(venue, symbol);
-        Accounts.getAccount(venue, accountId);
-        final List<Stocks.Stock> stocks = Stocks.getStocks();
-        final List<Accounts.Account> accounts = Accounts.getAccounts();
+        stocks.getStock(venue, symbol);
+        accounts.getAccount(venue, accountId);
         final int startingCash = levelResponse.getBalances().get("USD");
         try (final BackOfficeManager backOfficeManager =
-                     new BackOfficeManager(accounts, stocks, startingCash,
+                     new BackOfficeManager(done, accounts, stocks, startingCash,
                              useExecutionReceiver, expireOrders,
                              useQuoteReceiver)) {
             while (!levelManager.isLevelComplete()) {

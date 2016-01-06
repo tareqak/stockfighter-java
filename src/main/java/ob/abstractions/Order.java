@@ -2,21 +2,20 @@ package ob.abstractions;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import ob.backoffice.abstractions.Accounts;
-import ob.backoffice.abstractions.Stocks;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 
 public class Order {
-    private final Stocks.Stock stock;
+    private final String symbol;
+    private final String venue;
     private final Direction direction;
     private final Integer originalQuantity;
     private final Integer quantity;
     private final Integer price;
     private final OrderType orderType;
     private final Integer id;
-    private final Accounts.Account account;
+    private final String accountId;
     private final ZonedDateTime timestamp;
     private final List<Fill> fills;
     private final Integer totalFilled;
@@ -37,14 +36,15 @@ public class Order {
                  @JsonProperty("fills") final List<Fill> fills,
                  @JsonProperty("totalFilled") final Integer totalFilled,
                  @JsonProperty("open") final Boolean open) {
-        this.stock = Stocks.getStock(venue, symbol);
+        this.venue = venue;
+        this.symbol = symbol;
         this.direction = Direction.getDirection(direction);
         this.originalQuantity = originalQuantity;
         this.quantity = quantity;
         this.price = price;
         this.orderType = OrderType.getOrderType(orderType);
         this.id = id;
-        this.account = Accounts.getAccount(venue, accountId);
+        this.accountId = accountId;
         this.timestamp = ZonedDateTime.parse(timestamp);
         this.fills = fills;
         this.totalFilled = totalFilled;
@@ -54,24 +54,21 @@ public class Order {
     @Override
     public String toString() {
         return "Order{" +
-                "ok=" + ok +
-                ", stock=" + stock +
+                "symbol='" + symbol + '\'' +
+                ", venue='" + venue + '\'' +
                 ", direction=" + direction +
                 ", originalQuantity=" + originalQuantity +
                 ", quantity=" + quantity +
                 ", price=" + price +
                 ", orderType=" + orderType +
                 ", id=" + id +
-                ", account=\"" + account.getId() + '\"' +
+                ", accountId='" + accountId + '\'' +
                 ", timestamp=" + timestamp +
                 ", fills=" + fills +
                 ", totalFilled=" + totalFilled +
                 ", open=" + open +
+                ", ok=" + ok +
                 '}';
-    }
-
-    public Stocks.Stock getStock() {
-        return stock;
     }
 
     public Direction getDirection() {
@@ -98,10 +95,6 @@ public class Order {
         return id;
     }
 
-    public Accounts.Account getAccount() {
-        return account;
-    }
-
     public ZonedDateTime getTimestamp() {
         return timestamp;
     }
@@ -125,5 +118,17 @@ public class Order {
     @JsonProperty("ok")
     public void setOk(final Boolean ok) {
         this.ok = ok;
+    }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public String getAccountId() {
+        return accountId;
     }
 }

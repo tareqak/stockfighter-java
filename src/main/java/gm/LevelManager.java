@@ -27,14 +27,15 @@ public class LevelManager implements Closeable {
     private final ReentrantReadWriteLock flashReentrantReadWriteLock =
             new ReentrantReadWriteLock();
     private final Thread levelHeartbeatCheckerThread;
-    private final AtomicBoolean done = new AtomicBoolean(false);
+    private final AtomicBoolean done;
     private final CloseableHttpClient httpClient;
     private Flash flash = null;
 
     public LevelManager(final CloseableHttpClient httpClient,
-                        final String levelName) {
+                        final String levelName, final AtomicBoolean done) {
         this.levelName = levelName;
         this.httpClient = httpClient;
+        this.done = done;
         levelHeartbeatCheckerThread = new Thread(new LevelHeartbeatChecker());
         StartLevelRequest startLevelRequest =
                 new StartLevelRequest(httpClient, levelName);

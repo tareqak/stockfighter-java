@@ -34,14 +34,20 @@ public class Bookkeeper implements Closeable {
     private final Cache<Integer, OrderStatus> orderStatusCache;
     private final CashStatus cashStatus;
     private final List<Thread> workers;
-    private final AtomicBoolean done = new AtomicBoolean(false);
+    private final AtomicBoolean done;
+    private final Accounts accounts;
+    private final Stocks stocks;
     private String lastStatus = "";
 
-    public Bookkeeper(final BlockingQueue<Execution> executionBlockingQueue,
+    public Bookkeeper(final AtomicBoolean done,
+                      final BlockingQueue<Execution> executionBlockingQueue,
                       final int numThreads, final boolean expireOrders,
                       final int startingCash,
-                      final List<Accounts.Account> accounts,
-                      final List<Stocks.Stock> stocks) {
+                      final Accounts accounts,
+                      final Stocks stocks) {
+        this.done = done;
+        this.accounts = accounts;
+        this.stocks = stocks;
         this.executionBlockingQueue = executionBlockingQueue;
         if (expireOrders) {
             orderStatusCache = CacheBuilder.newBuilder().initialCapacity(10)
@@ -52,10 +58,10 @@ public class Bookkeeper implements Closeable {
         }
         cashStatus = new CashStatus(startingCash);
 
-        positionStatusMap = accounts.parallelStream().collect(Collectors.toMap(
-                Function.identity(), account -> new HashMap<>()));
-        orderbooks = stocks.parallelStream().collect(Collectors.toMap(
-                Function.identity(), stock -> new Orderbook()));
+        positionStatusMap = accounts.getAccounts().parallelStream().collect(
+                Collectors.toMap(Function.identity(), a -> new HashMap<>()));
+        orderbooks = stocks.getStocks().parallelStream().collect(
+                Collectors.toMap(Function.identity(), s -> new Orderbook()));
         this.workers = new ArrayList<>(numThreads);
         for (int i = 0; i < numThreads; i += 1) {
             Thread t = new Thread(new Worker());
@@ -136,9 +142,9 @@ public class Bookkeeper implements Closeable {
                                     orderStatusContainer) {
         final Order order = newOrderResponse.getOrder();
         logger.debug(order.toString());
-        final OrderStatus orderStatus = newOrderRequest.getOrderStatus();
+        final OrderStatus orderStatus = new OrderStatus(order, accounts,
+                stocks);
         final Integer id = order.getId();
-        orderStatus.setId(id);
         while (true) {
             try {
                 orderStatusContainer.setOrderStatus(
@@ -262,22 +268,30 @@ public class Bookkeeper implements Closeable {
                         continue;
                     }
 
-                    final Accounts.Account orderAccount = order.getAccount();
-                    final Stocks.Stock orderStock = order.getStock();
+                    final String orderAccountId = order.getAccountId();
+                    final String orderVenue = order.getVenue();
+                    final String orderSymbol = order.getSymbol();
                     final Integer orderId = order.getId();
                     final Direction direction = order.getDirection();
 
-                    final Accounts.Account executionAccount =
-                            execution.getAccount();
-                    final Stocks.Stock executionStock = execution.getStock();
+                    final String executionAccountId = execution.getAccountId();
+                    final String executionVenue = execution.getVenue();
+                    final String executionSymbol = execution.getSymbol();
 
-                    if (!executionAccount.equals(orderAccount) ||
-                            !executionStock.equals(orderStock)) {
-                        logger.warn("Mismatch {}:{} {}:{}",
-                                executionAccount, orderAccount,
-                                executionStock, orderStock);
+                    if (!orderAccountId.equals(executionAccountId) ||
+                            !orderVenue.equals(executionVenue) ||
+                            !orderSymbol.equals(executionSymbol)) {
+                        logger.warn("Mismatch {} vs {} | {} vs {} | {} vs {}",
+                                orderAccountId, executionAccountId,
+                                orderVenue, executionVenue, orderSymbol,
+                                executionSymbol);
                         continue;
                     }
+
+                    final Accounts.Account orderAccount =
+                            accounts.getAccount(orderVenue, orderAccountId);
+                    final Stocks.Stock orderStock =
+                            stocks.getStock(orderVenue, orderSymbol);
 
                     OrderStatus orderStatus;
                     while (true) {

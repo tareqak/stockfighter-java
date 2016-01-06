@@ -5,39 +5,36 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public enum Accounts {
-    INSTANCE;
-
+public class Accounts {
     private final Map<String, Map<String, Account>> accounts = new HashMap<>();
     private final List<Account> accountList = new LinkedList<>();
 
-    public static Account getAccount(final String venue, final String id) {
-        if (INSTANCE.accounts.containsKey(venue)) {
-            final Map<String, Account> accountMap =
-                    INSTANCE.accounts.get(venue);
+    public Account getAccount(final String venue, final String id) {
+        if (accounts.containsKey(venue)) {
+            final Map<String, Account> accountMap = accounts.get(venue);
             if (accountMap.containsKey(id)) {
                 return accountMap.get(id);
             } else {
                 final Account account = new Account(venue, id);
                 accountMap.put(id, account);
-                INSTANCE.accountList.add(account);
+                accountList.add(account);
                 return account;
             }
         } else {
             final Account account = new Account(venue, id);
             final Map<String, Account> accountMap = new HashMap<>();
             accountMap.put(id, account);
-            INSTANCE.accounts.put(venue, accountMap);
-            INSTANCE.accountList.add(account);
+            accounts.put(venue, accountMap);
+            accountList.add(account);
             return account;
         }
     }
 
-    public static List<Account> getAccounts() {
-        return INSTANCE.accountList;
+    public List<Account> getAccounts() {
+        return accountList;
     }
 
-    public static class Account {
+    public class Account {
         private final String id;
         private final String venue;
 

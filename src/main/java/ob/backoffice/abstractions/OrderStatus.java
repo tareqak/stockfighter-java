@@ -1,6 +1,7 @@
 package ob.backoffice.abstractions;
 
 import ob.abstractions.Direction;
+import ob.abstractions.Order;
 import ob.abstractions.OrderType;
 
 import java.time.ZonedDateTime;
@@ -32,6 +33,17 @@ public class OrderStatus {
         this.orderType = orderType;
         this.price = price;
         this.quantity = quantity;
+    }
+
+    public OrderStatus(final Order order, final Accounts accounts,
+                       final Stocks stocks) {
+        direction = order.getDirection();
+        orderType = order.getOrderType();
+        price = order.getPrice();
+        quantity = order.getOriginalQuantity();
+        final String venue = order.getVenue();
+        account = accounts.getAccount(venue, order.getAccountId());
+        stock = stocks.getStock(venue, order.getSymbol());
     }
 
     public void update(final Integer filled, final Integer sharePriceValue,

@@ -5,38 +5,36 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public enum Stocks {
-    INSTANCE;
-
+public class Stocks {
     private final Map<String, Map<String, Stock>> stocks = new HashMap<>();
     private final List<Stock> stockList = new LinkedList<>();
 
-    public static Stock getStock(final String venue, final String symbol) {
-        if (INSTANCE.stocks.containsKey(venue)) {
-            final Map<String, Stock> stockMap = INSTANCE.stocks.get(venue);
+    public Stock getStock(final String venue, final String symbol) {
+        if (stocks.containsKey(venue)) {
+            final Map<String, Stock> stockMap = stocks.get(venue);
             if (stockMap.containsKey(symbol)) {
                 return stockMap.get(symbol);
             } else {
                 final Stock stock = new Stock(venue, symbol);
                 stockMap.put(symbol, stock);
-                INSTANCE.stockList.add(stock);
+                stockList.add(stock);
                 return stock;
             }
         } else {
             final Stock stock = new Stock(venue, symbol);
             final Map<String, Stock> stockMap = new HashMap<>();
             stockMap.put(symbol, stock);
-            INSTANCE.stocks.put(venue, stockMap);
-            INSTANCE.stockList.add(stock);
+            stocks.put(venue, stockMap);
+            stockList.add(stock);
             return stock;
         }
     }
 
-    public static List<Stock> getStocks() {
-        return INSTANCE.stockList;
+    public List<Stock> getStocks() {
+        return stockList;
     }
 
-    public static class Stock {
+    public class Stock {
         private final String venue;
         private final String symbol;
 
