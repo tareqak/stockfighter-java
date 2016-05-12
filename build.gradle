@@ -26,14 +26,16 @@ task fatJar(type: Jar) {
 
 dependencies {
     // HTTP
-    compile 'org.apache.httpcomponents:httpclient:4.5.1'
+    compile 'org.apache.httpcomponents:httpclient:4.5.2'
 
     // JSON
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.1-1'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.7.4'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.7.4'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.7.4'
 
     // Logger
-    compile 'org.slf4j:slf4j-api:1.7.16'
-    compile 'ch.qos.logback:logback-classic:1.1.5'
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile 'ch.qos.logback:logback-classic:1.1.7'
 
     // WebSocket
     compile 'javax.websocket:javax.websocket-api:1.1'
@@ -43,5 +45,5 @@ dependencies {
     compile 'com.google.guava:guava:19.0'
 
     // Statistics
-    compile 'org.apache.commons:commons-math3:3.6'
+    compile 'org.apache.commons:commons-math3:3.6.1'
 }
